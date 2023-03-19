@@ -1,3 +1,5 @@
+import asyncio
+
 import fastapi
 import pydantic
 import starlette.datastructures
@@ -16,19 +18,21 @@ class NTProServer:
     def disconnect(self, websocket: fastapi.WebSocket):
         self.connections.pop(websocket.client)
 
+    # вариант без исключений с таймером?
+    # обработка на случай дисконнекта
     async def serve(self, websocket: fastapi.WebSocket):
         while True:
-            raw_envelope = await websocket.receive_json()
-
             try:
+                raw_envelope = await asyncio.wait_for(websocket.receive_json(), timeout=2)
                 envelope = client_messages.ClientEnvelope.parse_obj(raw_envelope)
                 message = envelope.get_parsed_message()
+                response = await message.process(self, websocket)
+                await self.send(response, websocket)
+            except asyncio.TimeoutError:
+                await websocket.send_text('а что там с котировками?')
             except pydantic.ValidationError as ex:
                 await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)
                 continue
-
-            response = await message.process(self, websocket)
-            await self.send(response, websocket)
 
     @staticmethod
     async def send(message: base.MessageT, websocket: fastapi.WebSocket):

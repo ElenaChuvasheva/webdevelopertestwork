@@ -28,7 +28,6 @@ class OrderStatus(enum.IntEnum):
     cancelled = enum.auto()
 
 
-# убрать в БД
 class Instrument(str, enum.Enum):
     eur_usd = 'EUR/USD'
     eur_rub = 'EUR/RUB'
