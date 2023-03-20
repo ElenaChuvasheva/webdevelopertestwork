@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from server.models import client_messages
     from server.ntpro_server import NTProServer
 
+def user_from_ws_address(websocket: fastapi.WebSocket) -> str:
+    return f'{websocket.client.host}:{str(websocket.client.port)}'
 
 async def subscribe_market_data_processor(
         server: NTProServer,
@@ -21,12 +23,16 @@ async def subscribe_market_data_processor(
     from models import server_messages
     from models.dbase import Instrument, database
 
-#    id = message.dict().get('instrument')
-#    inst_query = select(Instrument).where(Instrument.id == id)
-#    result = await database.fetch_one(inst_query)
-#    if result is None:
-#        return server_messages.ErrorInfo(reason=f'Instrument with id={id} does not exist')
-    
+    id = message.dict().get('instrument')
+    inst_query = select(Instrument).where(Instrument.id == id)
+    result = await database.fetch_one(inst_query)
+    if result is None:
+        return server_messages.ErrorInfo(reason=f'Instrument with id={id} does not exist')
+
+    # print(type(websocket.client.host))
+    print(user_from_ws_address(websocket))
+
+
     context = {'subscriptionId': uuid.uuid4().hex}
     return server_messages.SuccessInfo(info=context)
 

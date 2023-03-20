@@ -32,7 +32,8 @@ class ClientMessage(Message):
 
 
 class SubscribeMarketData(ClientMessage):
-    instrument: enums.Instrument
+    instrument: int
+    # instrument: enums.Instrument
 
 
 class UnsubscribeMarketData(ClientMessage):
@@ -41,6 +42,7 @@ class UnsubscribeMarketData(ClientMessage):
 
 class PlaceOrder(ClientMessage):
     instrument: int
+    # instrument: enums.Instrument
     side: enums.OrderSide
     amount: pydantic.condecimal(gt=decimal.Decimal())
     price: pydantic.condecimal(gt=decimal.Decimal())
