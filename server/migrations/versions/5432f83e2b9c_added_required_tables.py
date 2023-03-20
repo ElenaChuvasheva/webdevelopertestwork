@@ -1,8 +1,8 @@
-"""instrument
+"""Added required tables
 
-Revision ID: 2cd23f85c034
+Revision ID: 5432f83e2b9c
 Revises: 
-Create Date: 2023-03-20 13:53:46.501179
+Create Date: 2023-03-20 20:41:01.571462
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '2cd23f85c034'
+revision = '5432f83e2b9c'
 down_revision = None
 branch_labels = None
 depends_on = None

@@ -33,7 +33,6 @@ class ClientMessage(Message):
 
 class SubscribeMarketData(ClientMessage):
     instrument: int
-    # instrument: enums.Instrument
 
 
 class UnsubscribeMarketData(ClientMessage):

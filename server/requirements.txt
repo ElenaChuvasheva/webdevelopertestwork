@@ -1,0 +1,11 @@
+SQLAlchemy==1.4.46
+aiosqlite==0.18.0
+alembic==1.10.0
+bidict==0.22.0
+databases==0.7.0
+fastapi==0.61.2
+uvicorn==0.14.0
+websockets==10.4
+asyncpg==0.27.0
+python-dotenv==0.21.0
+psycopg2-binary==2.9.5

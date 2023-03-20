@@ -1,0 +1,17 @@
+подписка:
+{
+    "messageType": 1,
+    "message": {"instrument": 1}
+}
+
+отписка:
+{
+    "messageType": 2,
+    "message": {"subscription_id": "7e84e2d7-9124-4da1-8050-3201e07fc7e2"}
+}
+
+размещение заявки:
+{
+    "messageType": 3,
+    "message": {"instrument": 2, "side": 1, "amount": 3, "price": 20}
+}

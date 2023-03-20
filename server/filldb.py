@@ -1,14 +1,23 @@
 import csv
 import os
 
+from dotenv import load_dotenv
 from models.dbase import Instrument
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV_DIR = os.path.join(BASE_DIR, 'server', 'data')
+load_dotenv()
 
-SYNC_DATABASE_URL = 'sqlite:///./sql.db'
+DB_NAME = os.getenv("DB_NAME", "exchange")
+DB_USER = os.getenv("DB_USER", "user")
+DB_PASS = os.getenv("DB_PASS", "password")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "5432")
+
+SYNC_DATABASE_URL = (f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+
 sync_engine = create_engine(SYNC_DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autoflush=False, bind=sync_engine)
 db = SessionLocal()
