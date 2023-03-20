@@ -3,8 +3,7 @@ import asyncio
 import fastapi
 import pydantic
 import starlette.datastructures
-
-from server.models import base, client_messages, server_messages
+from models import base, client_messages, server_messages
 
 
 class NTProServer:
@@ -29,7 +28,7 @@ class NTProServer:
                 response = await message.process(self, websocket)
                 await self.send(response, websocket)
             except asyncio.TimeoutError:
-                await websocket.send_text('а что там с котировками?')
+                await websocket.send_text(str(websocket.client))
             except pydantic.ValidationError as ex:
                 await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)
                 continue

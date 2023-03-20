@@ -4,9 +4,8 @@ import uuid
 from typing import Dict, TypeVar
 
 import bidict as bidict
-
-from server import enums
-from server.models.base import Envelope, Message, Quote
+import enums
+from models.base import Envelope, Message, Quote
 
 
 class ServerMessage(Message):
@@ -21,6 +20,9 @@ class ErrorInfo(ServerMessage):
 class SuccessInfo(ServerMessage):
     info: Dict[str, str] = {}
 
+    def dict(self):
+        return self.info
+
 
 class ExecutionReport(ServerMessage):
     order_id: uuid.UUID
@@ -29,7 +31,7 @@ class ExecutionReport(ServerMessage):
 
 class MarketDataUpdate(ServerMessage):
     subscription_id: uuid.UUID
-    instrument: enums.Instrument
+    # instrument: enums.Instrument
     quotes: list[Quote]
 
 

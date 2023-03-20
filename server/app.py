@@ -2,13 +2,20 @@ import mimetypes
 import pathlib
 
 import fastapi
-
-from server.ntpro_server import NTProServer
+from models.dbase import database
+from ntpro_server import NTProServer
 
 api = fastapi.FastAPI()
 server = NTProServer()
-html = (pathlib.Path('server') / 'test.html').read_text()
+html = pathlib.Path('test.html').read_text()
 
+@api.on_event('startup')
+async def startup():
+    await database.connect()
+
+@api.on_event('shutdown')
+async def shutdown():
+    await database.disconnect()
 
 @api.get('/')
 async def get():

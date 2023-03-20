@@ -11,12 +11,11 @@ Base = declarative_base()
 ReqColumn = partial(Column, nullable=False)
 
 
-DATABASE_URL = 'sqlite+aiosqlite:///./sql.db'
+DATABASE_URL = 'sqlite+aiosqlite://server/sql.db'
 
-engine = create_async_engine(DATABASE_URL, future=True, echo=True)
 database = databases.Database(DATABASE_URL)
 
 class Instrument(Base):
     __tablename__ = 'instruments'
     id = Column(Integer, primary_key=True, index=True)
-    instrument = ReqColumn(String(100), unique=True)
+    name = ReqColumn(String(100), unique=True)
