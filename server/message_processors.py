@@ -21,17 +21,15 @@ async def subscribe_market_data_processor(
 ):
 
     from models import server_messages
-    from models.dbase import Instrument, database
+    from models.dbase import database, instruments_table
 
     id = message.dict().get('instrument')
-    inst_query = select(Instrument).where(Instrument.id == id)
+    inst_query = select(instruments_table).where(instruments_table.c.id == id)
     result = await database.fetch_one(inst_query)
     if result is None:
         return server_messages.ErrorInfo(reason=f'Instrument with id={id} does not exist')
 
-    # print(type(websocket.client.host))
     print(user_from_ws_address(websocket))
-
 
     context = {'subscriptionId': uuid.uuid4().hex}
     return server_messages.SuccessInfo(info=context)
