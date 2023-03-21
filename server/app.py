@@ -4,6 +4,7 @@ import pathlib
 import fastapi
 from models.dbase import database
 from ntpro_server import NTProServer
+from websockets.exceptions import ConnectionClosedOK
 
 api = fastapi.FastAPI()
 server = NTProServer()
@@ -35,5 +36,5 @@ async def websocket_endpoint(websocket: fastapi.WebSocket):
 
     try:
         await server.serve(websocket)
-    except fastapi.WebSocketDisconnect:
-        server.disconnect(websocket)
+    except (fastapi.WebSocketDisconnect, ConnectionClosedOK):
+        await server.disconnect(websocket)

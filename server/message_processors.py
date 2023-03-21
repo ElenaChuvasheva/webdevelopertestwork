@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
 from typing import TYPE_CHECKING
 
+import asyncpg
+from models.dbase import database, instruments_table, subscribes_table
 from sqlalchemy import select
 
 if TYPE_CHECKING:
@@ -11,8 +14,12 @@ if TYPE_CHECKING:
     from server.models import client_messages
     from server.ntpro_server import NTProServer
 
-def user_from_ws_address(websocket: fastapi.WebSocket) -> str:
-    return f'{websocket.client.host}:{str(websocket.client.port)}'
+async def say_test(websocket: fastapi.WebSocket):
+    await websocket.send_text('test')
+
+async def say_lol(websocket: fastapi.WebSocket):
+    await websocket.send_text('lol')
+
 
 async def subscribe_market_data_processor(
         server: NTProServer,
@@ -21,17 +28,26 @@ async def subscribe_market_data_processor(
 ):
 
     from models import server_messages
-    from models.dbase import database, instruments_table
 
     id = message.dict().get('instrument')
     inst_query = select(instruments_table).where(instruments_table.c.id == id)
-    result = await database.fetch_one(inst_query)
-    if result is None:
+    instrument = await database.fetch_one(inst_query)
+    if instrument is None:
         return server_messages.ErrorInfo(reason=f'Instrument with id={id} does not exist')
 
-    print(user_from_ws_address(websocket))
+    try:
+        subscribe_query = subscribes_table.insert().values(
+            instrument=id,
+            address=str(websocket.client),
+            uuid=uuid.uuid4()
+        ).returning(subscribes_table.c.uuid)
+        subscribe = await database.fetch_one(subscribe_query)
+        subscribe_dict = dict(zip(subscribe.keys(), subscribe.values()))
+        server.connections[websocket.client].subscriptions.append(asyncio.create_task(say_test(websocket)))
+    except asyncpg.exceptions.UniqueViolationError:
+        return server_messages.ErrorInfo(reason='The subscription already exists')
 
-    context = {'subscriptionId': uuid.uuid4().hex}
+    context = {'subscriptionId': subscribe_dict['uuid'].hex}
     return server_messages.SuccessInfo(info=context)
 
 
@@ -40,11 +56,17 @@ async def unsubscribe_market_data_processor(
         websocket: fastapi.WebSocket,
         message: client_messages.UnsubscribeMarketData,
 ):
-    from models.server_messages import SuccessInfo
+    from models import server_messages
 
-    # TODO ...
-    context = {'subscriptionId': message.dict()['subscription_id'].hex}
-    return SuccessInfo(info=context)
+    uuid = message.dict().get('subscription_id')
+    unsubscribe_query = subscribes_table.delete().where(
+        subscribes_table.c.uuid == uuid).returning(subscribes_table.c.uuid)
+    subscribe = await database.fetch_all(unsubscribe_query)    
+    if not subscribe:
+        return server_messages.ErrorInfo(reason='The subscription does not exist')            
+    server.connections[websocket.client].subscriptions.append(asyncio.create_task(say_lol(websocket)))
+    context = {'subscriptionId': uuid.hex}
+    return server_messages.SuccessInfo(info=context)
 
 
 async def place_order_processor(

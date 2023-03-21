@@ -1,9 +1,11 @@
 import asyncio
+import json
 
 import fastapi
 import pydantic
 import starlette.datastructures
 from models import base, client_messages, server_messages
+from utils import delete_users_subscribes
 
 
 class NTProServer:
@@ -14,11 +16,11 @@ class NTProServer:
         await websocket.accept()
         self.connections[websocket.client] = base.Connection()
 
-    def disconnect(self, websocket: fastapi.WebSocket):
+    async def disconnect(self, websocket: fastapi.WebSocket):
+        await delete_users_subscribes(websocket)
         self.connections.pop(websocket.client)
 
     # вариант без исключений с таймером?
-    # обработка на случай дисконнекта
     async def serve(self, websocket: fastapi.WebSocket):
         while True:
             try:
@@ -27,9 +29,14 @@ class NTProServer:
                 message = envelope.get_parsed_message()
                 response = await message.process(self, websocket)
                 await self.send(response, websocket)
-            except asyncio.TimeoutError:
+            except asyncio.TimeoutError:                
                 await websocket.send_text(str(websocket.client))
             except pydantic.ValidationError as ex:
+                await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)
+            except json.decoder.JSONDecodeError:
+                await self.send(server_messages.ErrorInfo(
+                    reason='The message is not a valid JSON'), websocket)
+            except Exception as ex:
                 await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)
                 continue
 

@@ -7,7 +7,7 @@
 отписка:
 {
     "messageType": 2,
-    "message": {"subscription_id": "7e84e2d7-9124-4da1-8050-3201e07fc7e2"}
+    "message": {"subscription_id": "64b757784dfe4c07a58378fcefc5a666"}
 }
 
 размещение заявки:

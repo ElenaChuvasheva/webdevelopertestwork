@@ -31,7 +31,7 @@ class ExecutionReport(ServerMessage):
 
 class MarketDataUpdate(ServerMessage):
     subscription_id: uuid.UUID
-    # instrument: enums.Instrument
+    instrument: str
     quotes: list[Quote]
 
 
