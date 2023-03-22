@@ -11,22 +11,24 @@ from models.base import Envelope, Message, Quote
 class ServerMessage(Message):
     def get_type(self: ServerMessageT) -> enums.ServerMessageType:
         return _SERVER_MESSAGE_TYPE_BY_CLASS[self.__class__]
-
+    
 
 class ErrorInfo(ServerMessage):
     reason: str
 
-
 class SuccessInfo(ServerMessage):
-    info: Dict[str, str] = {}
+    subscription_id: str
 
-    def dict(self):
-        return self.info
+# class SuccessInfo(ServerMessage):
+#    info: Dict[str, str] = {}
+
+#    def dict(self, *args, **kwargs):
+#        return self.info
 
 
 class ExecutionReport(ServerMessage):
     order_id: uuid.UUID
-    order_status: enums.OrderStatus
+    orderStatus: enums.OrderStatus
 
 
 class MarketDataUpdate(ServerMessage):

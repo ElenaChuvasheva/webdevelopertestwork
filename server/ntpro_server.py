@@ -10,19 +10,14 @@ from utils import delete_users_subscribes
 
 class NTProServer:
     def __init__(self):
-        # self.connections: dict[starlette.datastructures.Address, base.Connection] = {}
-        # self.connections: dict[starlette.datastructures.Address, fastapi.WebSocket] = {}
         self.connections: dict[str, fastapi.WebSocket] = {}
         
     async def connect(self, websocket: fastapi.WebSocket):
         await websocket.accept()
-        # self.connections[websocket.client] = base.Connection()
-        # self.connections[websocket.client] = websocket
         self.connections[str(websocket.client)] = websocket
 
     async def disconnect(self, websocket: fastapi.WebSocket):
         await delete_users_subscribes(websocket)
-        # self.connections.pop(websocket.client)
         self.connections.pop(str(websocket.client))
 
     # вариант без исключений с таймером?
@@ -50,4 +45,4 @@ class NTProServer:
     @staticmethod
     async def send(message: base.MessageT, websocket: fastapi.WebSocket):
         await websocket.send_json(server_messages.ServerEnvelope(message_type=message.get_type(),
-                                                                 message=message.dict()).dict())
+                                                                 message=message.dict(by_alias=True)).dict(by_alias=True))

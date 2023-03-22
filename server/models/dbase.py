@@ -5,11 +5,10 @@ from functools import partial
 import databases
 import sqlalchemy
 from dotenv import load_dotenv
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.types import DECIMAL
-from sqlalchemy.dialects.postgresql import ENUM
 
 load_dotenv()
 
@@ -54,7 +53,8 @@ subscribes_table = sqlalchemy.Table(
     Column('uuid', UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
     ReqColumn('instrument', ForeignKey(instruments_table.c.id,
                                        onupdate="CASCADE",
-                                       ondelete="CASCADE")),
-    ReqColumn('address', String()),
+                                       ondelete="CASCADE"),
+                                       index=True),
+    ReqColumn('address', String),
     UniqueConstraint('instrument', 'address', name='instrument_address_constraint')
 )
