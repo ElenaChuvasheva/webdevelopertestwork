@@ -37,7 +37,6 @@ class NTProServer:
                 await self.send(response, websocket)
             except asyncio.TimeoutError:
                 await quote_magic(self)
-                # await check_quotes(websocket)
                 await websocket.send_text(str(websocket.client))
             except pydantic.ValidationError as ex:
                 await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)

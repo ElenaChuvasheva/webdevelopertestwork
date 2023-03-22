@@ -67,7 +67,7 @@ async def unsubscribe_market_data_processor(
     subscribe = await database.fetch_all(unsubscribe_query)    
     if not subscribe:
         return server_messages.ErrorInfo(reason='The subscription does not exist')            
-    server.connections[websocket.client].subscriptions.append(asyncio.create_task(say_lol(websocket)))
+    # server.connections[websocket.client].subscriptions.append(asyncio.create_task(say_lol(websocket)))
     context = {'subscriptionId': uuid.hex}
     return server_messages.SuccessInfo(info=context)
 
@@ -87,16 +87,22 @@ async def quote_magic(
         server: NTProServer
 ):
     from models import server_messages
+    from models.base import Quote
 
     instrument_id = 2
+    inst_query = select(instruments_table).where(instruments_table.c.id == instrument_id)
+    instrument = await database.fetch_one(inst_query)
+    if instrument is None:
+        return server_messages.ErrorInfo(reason=f'Instrument with id={id} does not exist')
+
     quotes_query = quotes_table.insert().values(
         uuid=uuid.uuid4(),
         instrument=instrument_id,
         timestamp=datetime.now(),
-        bid=Decimal(35.00),
-        offer=Decimal(34.50),
-        min_amount=Decimal(33.00),
-        max_amount=Decimal(36.00)
+        bid=Decimal('35.00'),
+        offer=Decimal('34.50'),
+        min_amount=Decimal('33.00'),
+        max_amount=Decimal('36.00')
     ).returning(
         quotes_table.c.bid,
         quotes_table.c.offer,
@@ -104,18 +110,34 @@ async def quote_magic(
         quotes_table.c.max_amount
     )
     quote = await database.fetch_one(quotes_query)
-    print(f'quote={quote}')
+    quote_dict = dict(zip(quote, quote.values()))
+    
     subscr_query = select(
-        subscribes_table.c.address).where(
+        subscribes_table.c.address, subscribes_table.c.uuid).where(
         subscribes_table.c.instrument == instrument_id)
     subscr = await database.fetch_all(subscr_query)
-    addresses = [dict(zip(x, x.values()))['address'] for x in list(subscr)]
-    print(addresses)
-    if addresses:
-        for address in addresses:
-            websocket = server.connections.get(address)
-            print(websocket)
-            await websocket.send_text(f'ты подписота инструмента {instrument_id}, котировка изменилась')
+#    if subscr:
+#        print(type(list(subscr)[0]))
+    print(list(subscr))
+    subscribes_dict_list = [dict(zip(x, x.values())) for x in list(subscr)]
+    print(subscribes_dict_list)
+    #addresses = [dict(zip(x, x.values())).get('address') for x in list(subscr)]
+    #for address in addresses:
+    #    websocket = server.connections.get(address)
+    #    print(websocket)
+    for subscribes_dict in subscribes_dict_list:
+        address = subscribes_dict.get('address')
+        websocket = server.connections.get(address)
+        print(websocket)
+        # await websocket.send_text(f'ты подписота инструмента {instrument_id}, котировка изменилась')
+#        context = {'lol': 'lol'}
+        
+        await server.send(
+            server_messages.MarketDataUpdate(
+            subscription_id=subscribes_dict.get('uuid').hex,
+            instrument=instrument_id,
+            quotes=[Quote(**quote_dict)]), websocket)
+        # await server.send(server_messages.SuccessInfo(info=context), websocket)
 
 
 # async def check_quotes(websocket: fastapi.WebSocket):

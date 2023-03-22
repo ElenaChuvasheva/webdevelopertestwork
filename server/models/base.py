@@ -47,10 +47,10 @@ class Connection(pydantic.BaseModel):
 
 
 class Quote(pydantic.BaseModel):
-    bid: decimal.Decimal
-    offer: decimal.Decimal
-    min_amount: decimal.Decimal
-    max_amount: decimal.Decimal
+    bid: str
+    offer: str
+    min_amount: str
+    max_amount: str
 
 
 MessageT = TypeVar('MessageT', bound=Message)

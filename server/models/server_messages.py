@@ -30,8 +30,8 @@ class ExecutionReport(ServerMessage):
 
 
 class MarketDataUpdate(ServerMessage):
-    subscription_id: uuid.UUID
-    instrument: str
+    subscription_id: str
+    instrument: int
     quotes: list[Quote]
 
 
