@@ -1,8 +1,9 @@
 import csv
 import os
-
+import uuid
+from datetime import datetime
 from dotenv import load_dotenv
-from models.dbase import instruments_table
+from models.dbase import quotes_table, instruments_table
 from sqlalchemy import create_engine
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,6 +30,11 @@ def read_file(filename):
 def create_object(DBClass, row):
     if DBClass == instruments_table:
         kwargs = {'id': int(row[0]), 'name': row[1]}
+    elif DBClass == quotes_table:
+        kwargs = {#'uuid': uuid.uuid4(), 
+                  'instrument': int(row[1]),
+                  'timestamp': datetime.now(), 'bid': row[2],
+                  'offer': row[3], 'min_amount': row[4], 'max_amount': row[5]}
     with sync_engine.begin() as conn:
         conn.execute(DBClass.insert(), kwargs)
     
@@ -39,4 +45,5 @@ def read_to_DB(filename, DBClass):
         create_object(DBClass, row)
 
 read_to_DB('instruments.csv', instruments_table)
+read_to_DB('quotes.csv', quotes_table)
 

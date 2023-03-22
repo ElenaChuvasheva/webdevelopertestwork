@@ -1,13 +1,13 @@
 подписка:
 {
     "messageType": 1,
-    "message": {"instrument": 1}
+    "message": {"instrument": 2}
 }
 
 отписка:
 {
     "messageType": 2,
-    "message": {"subscription_id": "64b757784dfe4c07a58378fcefc5a666"}
+    "message": {"subscription_id": "c7cac8aaca5c4139b5f2509ad46e2747"}
 }
 
 размещение заявки:

@@ -5,10 +5,11 @@ from functools import partial
 import databases
 import sqlalchemy
 from dotenv import load_dotenv
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.types import DECIMAL
+from sqlalchemy.dialects.postgresql import ENUM
 
 load_dotenv()
 
@@ -28,15 +29,32 @@ metadata = sqlalchemy.MetaData()
 instruments_table = sqlalchemy.Table(
     'instruments',
     metadata,
-    Column('id', Integer, primary_key=True, index=True),
-    ReqColumn('name', String(100), unique=True)
+    Column('id', Integer, primary_key=True),
+    ReqColumn('name', String, unique=True),
+)
+
+quotes_table = sqlalchemy.Table(
+    'quotes',
+    metadata,
+    Column('uuid', UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+    ReqColumn('instrument', ForeignKey(instruments_table.c.id,
+                                       onupdate="CASCADE",
+                                       ondelete="CASCADE")),
+    ReqColumn('timestamp', DateTime()),
+    # ReqColumn('instrument', ENUM(Instrument), unique=True, index=True),
+    ReqColumn('bid', DECIMAL),
+    ReqColumn('offer', DECIMAL),
+    ReqColumn('min_amount', DECIMAL),
+    ReqColumn('max_amount', DECIMAL)
 )
 
 subscribes_table = sqlalchemy.Table(
     'subscribes',
     metadata,
     Column('uuid', UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
-    ReqColumn('instrument', ForeignKey(instruments_table.c.id)),
+    ReqColumn('instrument', ForeignKey(instruments_table.c.id,
+                                       onupdate="CASCADE",
+                                       ondelete="CASCADE")),
     ReqColumn('address', String()),
     UniqueConstraint('instrument', 'address', name='instrument_address_constraint')
 )
