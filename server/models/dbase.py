@@ -1,5 +1,4 @@
 import os
-import uuid
 from functools import partial
 
 import databases
@@ -35,7 +34,8 @@ instruments_table = sqlalchemy.Table(
 quotes_table = sqlalchemy.Table(
     'quotes',
     metadata,
-    Column('uuid', UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+    Column('uuid', UUID(as_uuid=True), primary_key=True,
+           server_default=sqlalchemy.text("uuid_generate_v4()")),
     ReqColumn('instrument', ForeignKey(instruments_table.c.id,
                                        onupdate="CASCADE",
                                        ondelete="CASCADE")),
@@ -50,7 +50,8 @@ quotes_table = sqlalchemy.Table(
 subscribes_table = sqlalchemy.Table(
     'subscribes',
     metadata,
-    Column('uuid', UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+    Column('uuid', UUID(as_uuid=True), primary_key=True,
+           server_default=sqlalchemy.text("uuid_generate_v4()")),
     ReqColumn('instrument', ForeignKey(instruments_table.c.id,
                                        onupdate="CASCADE",
                                        ondelete="CASCADE"),

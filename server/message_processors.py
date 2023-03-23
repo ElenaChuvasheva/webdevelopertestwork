@@ -43,16 +43,13 @@ async def subscribe_market_data_processor(
         subscribe_query = subscribes_table.insert().values(
             instrument=id,
             address=str(websocket.client),
-            uuid=uuid.uuid4()
         ).returning(subscribes_table.c.uuid)
         subscribe = await database.fetch_one(subscribe_query)
         subscribe_dict = dict_from_record(subscribe)
     except asyncpg.exceptions.UniqueViolationError:
         return server_messages.ErrorInfo(reason='The subscription already exists')
 
-    # context = {'subscriptionId': subscribe_dict.get('uuid').hex}
     return server_messages.SuccessInfo(subscription_id=subscribe_dict.get('uuid').hex)
-    # return server_messages.SuccessInfo(info=context)
 
 
 async def unsubscribe_market_data_processor(
@@ -106,7 +103,7 @@ async def make_new_quote(
         return server_messages.ErrorInfo(reason=f'Instrument with id={id} does not exist')
 
     quotes_query = quotes_table.insert().values(
-        uuid=uuid.uuid4(),
+        # uuid=uuid.uuid4(),
         instrument=instrument_id,
         timestamp=datetime.now(),
         bid=Decimal('35.00'),
@@ -155,8 +152,9 @@ async def broadcast_market_data(server, quotes_dict_list,
     for subscribes_dict in subscribes_dict_list:
         address = subscribes_dict.get('address')
         websocket = server.connections.get(address)
-        await server.send(
-            server_messages.MarketDataUpdate(
-            subscription_id=subscribes_dict.get('uuid').hex,
-            instrument=instrument_id,
-            quotes=quotes_list), websocket)
+        if websocket is not None:
+            await server.send(
+                server_messages.MarketDataUpdate(
+                subscription_id=subscribes_dict.get('uuid').hex,
+                instrument=instrument_id,
+                quotes=quotes_list), websocket)

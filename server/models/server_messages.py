@@ -6,24 +6,25 @@ from typing import Dict, TypeVar
 import bidict as bidict
 import enums
 from models.base import Envelope, Message, Quote
+from pydantic import root_validator
 
 
 class ServerMessage(Message):
     def get_type(self: ServerMessageT) -> enums.ServerMessageType:
         return _SERVER_MESSAGE_TYPE_BY_CLASS[self.__class__]
     
-
+    @root_validator
+    def uuid_to_str(cls, values):
+        for key, value in values.items():
+            if isinstance(value, uuid.UUID):
+                values[key] = str(values[key])
+        return values
+    
 class ErrorInfo(ServerMessage):
     reason: str
 
 class SuccessInfo(ServerMessage):
-    subscription_id: str
-
-# class SuccessInfo(ServerMessage):
-#    info: Dict[str, str] = {}
-
-#    def dict(self, *args, **kwargs):
-#        return self.info
+    subscription_id: uuid.UUID
 
 
 class ExecutionReport(ServerMessage):
@@ -32,7 +33,7 @@ class ExecutionReport(ServerMessage):
 
 
 class MarketDataUpdate(ServerMessage):
-    subscription_id: str
+    subscription_id: uuid.UUID
     instrument: int
     quotes: list[Quote]
 
