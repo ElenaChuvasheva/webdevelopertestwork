@@ -5,7 +5,7 @@ from typing import Dict, TypeVar
 
 import bidict as bidict
 import enums
-from models.base import Envelope, Message, Quote
+from models.base import Envelope, Message, Quote, dict_from_type_to_str
 from pydantic import root_validator
 
 
@@ -15,10 +15,8 @@ class ServerMessage(Message):
     
     @root_validator
     def uuid_to_str(cls, values):
-        for key, value in values.items():
-            if isinstance(value, uuid.UUID):
-                values[key] = str(values[key])
-        return values
+        return dict_from_type_to_str(values, uuid.UUID)
+
     
 class ErrorInfo(ServerMessage):
     reason: str
@@ -29,7 +27,7 @@ class SuccessInfo(ServerMessage):
 
 class ExecutionReport(ServerMessage):
     order_id: uuid.UUID
-    orderStatus: enums.OrderStatus
+    order_status: enums.OrderStatus
 
 
 class MarketDataUpdate(ServerMessage):

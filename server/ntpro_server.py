@@ -1,9 +1,11 @@
 import asyncio
 import json
+import time
+from random import randrange
 
 import fastapi
 import pydantic
-from message_processors import quote_magic
+from message_processors import order_magic, quote_magic
 from models import base, client_messages, server_messages
 from utils import delete_users_subscribes
 
@@ -25,13 +27,16 @@ class NTProServer:
     async def serve(self, websocket: fastapi.WebSocket):
         while True:
             try:
-                raw_envelope = await asyncio.wait_for(websocket.receive_json(), timeout=5)
+                raw_envelope = await asyncio.wait_for(websocket.receive_json(), timeout=10)
                 envelope = client_messages.ClientEnvelope.parse_obj(raw_envelope)
                 message = envelope.get_parsed_message()
                 response = await message.process(self, websocket)
                 await self.send(response, websocket)
             except asyncio.TimeoutError:
-                await quote_magic(self)
+                if randrange(0, 1000) %5 == 0:
+                    await quote_magic(self)
+                if randrange(0, 1000) % 5 == 0:
+                    await order_magic(self, websocket)
                 await websocket.send_text(str(websocket.client))
             except pydantic.ValidationError as ex:
                 await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)

@@ -41,20 +41,27 @@ class UnsubscribeMarketData(ClientMessage):
 
 class PlaceOrder(ClientMessage):
     instrument: int
-    # instrument: enums.Instrument
     side: enums.OrderSide
     amount: pydantic.condecimal(gt=decimal.Decimal())
     price: pydantic.condecimal(gt=decimal.Decimal())
+
+
+class CancelOrder(ClientMessage):
+    order_id: uuid.UUID
 
 
 _MESSAGE_PROCESSOR_BY_CLASS = {
     SubscribeMarketData: message_processors.subscribe_market_data_processor,
     UnsubscribeMarketData: message_processors.unsubscribe_market_data_processor,
     PlaceOrder: message_processors.place_order_processor,
+    CancelOrder: message_processors.cancel_order_processor,
 }
+
 _CLIENT_MESSAGE_TYPE_BY_CLASS = bidict.bidict({
     SubscribeMarketData: enums.ClientMessageType.subscribe_market_data,
     UnsubscribeMarketData: enums.ClientMessageType.unsubscribe_market_data,
     PlaceOrder: enums.ClientMessageType.place_order,
+    CancelOrder: enums.ClientMessageType.cancel_order,
 })
+
 ClientMessageT = TypeVar('ClientMessageT', bound=ClientMessage)

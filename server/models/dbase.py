@@ -1,9 +1,11 @@
+import enum
 import os
 from functools import partial
 
 import databases
 import sqlalchemy
 from dotenv import load_dotenv
+from enums import OrderSide, OrderStatus
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.schema import UniqueConstraint
@@ -21,6 +23,8 @@ SQLALCHEMY_DATABASE_URL = (f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:
 database = databases.Database(SQLALCHEMY_DATABASE_URL)
 
 ReqColumn = partial(Column, nullable=False)
+UUIDColumn = partial(Column, UUID(as_uuid=True), primary_key=True,
+           server_default=sqlalchemy.text("uuid_generate_v4()"))
 
 metadata = sqlalchemy.MetaData()
 
@@ -34,13 +38,11 @@ instruments_table = sqlalchemy.Table(
 quotes_table = sqlalchemy.Table(
     'quotes',
     metadata,
-    Column('uuid', UUID(as_uuid=True), primary_key=True,
-           server_default=sqlalchemy.text("uuid_generate_v4()")),
+    UUIDColumn(name='uuid'),
     ReqColumn('instrument', ForeignKey(instruments_table.c.id,
                                        onupdate="CASCADE",
                                        ondelete="CASCADE")),
     ReqColumn('timestamp', DateTime()),
-    # ReqColumn('instrument', ENUM(Instrument), unique=True, index=True),
     ReqColumn('bid', DECIMAL),
     ReqColumn('offer', DECIMAL),
     ReqColumn('min_amount', DECIMAL),
@@ -50,12 +52,27 @@ quotes_table = sqlalchemy.Table(
 subscribes_table = sqlalchemy.Table(
     'subscribes',
     metadata,
-    Column('uuid', UUID(as_uuid=True), primary_key=True,
-           server_default=sqlalchemy.text("uuid_generate_v4()")),
+    UUIDColumn(name='uuid'),
     ReqColumn('instrument', ForeignKey(instruments_table.c.id,
                                        onupdate="CASCADE",
                                        ondelete="CASCADE"),
                                        index=True),
     ReqColumn('address', String),
     UniqueConstraint('instrument', 'address', name='instrument_address_constraint')
+)
+
+
+orders_table = sqlalchemy.Table(
+    'orders',
+    metadata,
+    UUIDColumn(name='uuid'),
+    ReqColumn('instrument', ForeignKey(instruments_table.c.id,
+                                       onupdate="CASCADE",
+                                       ondelete="CASCADE")),
+    ReqColumn('side', ENUM(OrderSide)),
+    ReqColumn('status', ENUM(OrderStatus)),
+    ReqColumn('amount', DECIMAL),
+    ReqColumn('price', DECIMAL),
+    ReqColumn('address', String),
+    ReqColumn('timestamp', DateTime()),
 )

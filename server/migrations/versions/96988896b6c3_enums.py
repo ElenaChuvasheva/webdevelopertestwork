@@ -1,8 +1,8 @@
-"""uuid
+"""enums
 
-Revision ID: afec666ceeef
+Revision ID: 96988896b6c3
 Revises: 
-Create Date: 2023-03-23 09:32:15.339392
+Create Date: 2023-03-23 22:05:25.690570
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'afec666ceeef'
+revision = '96988896b6c3'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -23,6 +23,18 @@ def upgrade() -> None:
     sa.Column('name', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
+    )
+    op.create_table('orders',
+    sa.Column('uuid', postgresql.UUID(as_uuid=True), server_default=sa.text('uuid_generate_v4()'), nullable=False),
+    sa.Column('instrument', sa.Integer(), nullable=False),
+    sa.Column('side', postgresql.ENUM('buy', 'sell', name='orderside'), nullable=False),
+    sa.Column('status', postgresql.ENUM('active', 'filled', 'rejected', 'cancelled', name='orderstatus'), nullable=False),
+    sa.Column('amount', sa.DECIMAL(), nullable=False),
+    sa.Column('price', sa.DECIMAL(), nullable=False),
+    sa.Column('address', sa.String(), nullable=False),
+    sa.Column('timestamp', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['instrument'], ['instruments.id'], onupdate='CASCADE', ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('uuid')
     )
     op.create_table('quotes',
     sa.Column('uuid', postgresql.UUID(as_uuid=True), server_default=sa.text('uuid_generate_v4()'), nullable=False),
@@ -52,5 +64,6 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_subscribes_instrument'), table_name='subscribes')
     op.drop_table('subscribes')
     op.drop_table('quotes')
+    op.drop_table('orders')
     op.drop_table('instruments')
     # ### end Alembic commands ###
