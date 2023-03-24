@@ -8,6 +8,8 @@ class ClientMessageType(enum.IntEnum):
     unsubscribe_market_data = enum.auto()
     place_order = enum.auto()
     cancel_order = enum.auto()
+    get_orders = enum.auto()
+    get_instruments = enum.auto()
 
 
 class ServerMessageType(enum.IntEnum):
@@ -15,14 +17,16 @@ class ServerMessageType(enum.IntEnum):
     error = enum.auto()
     execution_report = enum.auto()
     market_data_update = enum.auto()
+    orders_list = enum.auto()
+    instruments_list = enum.auto()
 
 
-class OrderSide(enum.IntEnum):
+class OrderSide(enum.Enum):
     buy = enum.auto()
     sell = enum.auto()
 
 
-class OrderStatus(enum.IntEnum):
+class OrderStatus(enum.Enum):
     active = enum.auto()
     filled = enum.auto()
     rejected = enum.auto()

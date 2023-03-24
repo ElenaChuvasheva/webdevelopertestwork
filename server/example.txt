@@ -21,3 +21,15 @@
     "messageType": 4,
     "message": {"orderId": "4a01e7fc-4cb5-4718-b563-9d049c6b0272"}
 }
+
+запрос всех заявок
+{
+    "messageType": 5,
+    "message": {}
+}
+
+запрос всех инструментов
+{
+    "messageType": 6,
+    "message": {}
+}

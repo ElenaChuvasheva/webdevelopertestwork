@@ -11,8 +11,7 @@ from enums import OrderSide, OrderStatus
 from models.dbase import (database, instruments_table, orders_table,
                           quotes_table, subscribes_table)
 from sqlalchemy import asc, select
-from utils import (dict_from_record, dict_list_from_records,
-                   fetch_query_one_obj, get_instrument)
+from utils import dict_list_from_records, fetch_query_one_obj, get_instrument
 
 if TYPE_CHECKING:
     import fastapi
@@ -92,8 +91,9 @@ async def place_order_processor(
         amount=message.dict().get('amount'),
         price=message.dict().get('price'),        
         address=str(websocket.client),
-        timestamp=datetime.now(),
-    ).returning(orders_table.c.uuid)
+        creation_time=datetime.now(),
+        change_time=datetime.now(),
+    ).returning(orders_table.c.uuid, orders_table.c.status)
     order_dict = await fetch_query_one_obj(order_query)
     
     return server_messages.ExecutionReport(order_id=order_dict.get('uuid'),
@@ -110,11 +110,52 @@ async def cancel_order_processor(
     cancel_query = orders_table.update().where(
         orders_table.c.uuid == uuid,
         orders_table.c.status == OrderStatus.active).values(
-        status=OrderStatus.cancelled).returning(orders_table.c.uuid)
+        status=OrderStatus.cancelled, change_time=datetime.now()).returning(orders_table.c.uuid)
     cancelled_order_dict = await fetch_query_one_obj(cancel_query)
 
     return server_messages.ExecutionReport(order_id=cancelled_order_dict.get('uuid'),
                                            order_status=OrderStatus.cancelled)
+
+async def get_orders_processor(
+        server: NTProServer,
+        websocket: fastapi.WebSocket,
+        message: client_messages.PlaceOrder,
+):
+    from models import server_messages
+    from models.base import Order
+
+    # потом вернуть where
+    orders_query = select(orders_table.c.creation_time,
+                          orders_table.c.change_time,
+                          orders_table.c.status,
+                          orders_table.c.side,
+                          orders_table.c.price,
+                          orders_table.c.amount,
+                          orders_table.c.uuid,
+                          instruments_table.c.name.label('instrument')
+                          ).select_from(
+        orders_table.join(instruments_table)).where(
+        orders_table.c.address == str(websocket.client))
+    orders_dict_list = dict_list_from_records(
+        await database.fetch_all(orders_query))
+    # print(orders_dict_list)
+    return server_messages.OrdersList(
+        orders=[Order(**x) for x in orders_dict_list])
+
+async def get_instruments_processor(
+        server: NTProServer,
+        websocket: fastapi.WebSocket,
+        message: client_messages.PlaceOrder,
+):
+    from models import server_messages
+    from models.base import Instrument
+
+    instruments_query = select(instruments_table)
+    instruments_dict_list = dict_list_from_records(
+        await database.fetch_all(instruments_query))
+
+    return server_messages.InstrumentsList(
+        instruments=[Instrument(**x) for x in instruments_dict_list])
 
 async def order_magic(
         server: NTProServer,
@@ -122,39 +163,30 @@ async def order_magic(
 ):    
     from models import server_messages
 
-    orders_dict_list = await get_orders_dict_list(websocket)
-    print(orders_dict_list)
+    orders_query = select(orders_table.c.uuid).where(
+        orders_table.c.address == str(websocket.client),
+        orders_table.c.status == OrderStatus.active)
+    orders_dict_list = dict_list_from_records(
+        await database.fetch_all(orders_query))
+    # print(orders_dict_list)
     if not orders_dict_list:
         return
-    
     changed_orders_dict = await change_order_random(orders_dict_list)
-
     await server.send(server_messages.ExecutionReport(
         order_id=changed_orders_dict.get('uuid'),
         order_status=OrderStatus[changed_orders_dict.get('status')]),
         websocket)
-    # получаем из бд созданные пользователем активные заявки. нету - валим
-    # выбираем одну случайным образом
-    # случайным образом выбираем статус filled/rejected
+
 
 async def change_order_random(orders_dict_list):
     order_to_change = choice(orders_dict_list)
-    uuid = order_to_change.get('uuid')    
+    uuid = order_to_change.get('uuid')
     new_status = choice([OrderStatus.filled, OrderStatus.rejected])
     change_query = orders_table.update().where(
         orders_table.c.uuid == uuid).values(
-        status=new_status).returning(
+        status=new_status, change_time=datetime.now()).returning(
         orders_table.c.uuid, orders_table.c.status)
     return await fetch_query_one_obj(change_query)
-    
-
-# порядок расположения - важен?
-async def get_orders_dict_list(websocket: fastapi.WebSocket):
-    orders_query = select(orders_table.c.uuid).where(
-        orders_table.c.address == str(websocket.client),
-        orders_table.c.status == OrderStatus.active)
-    orders = await database.fetch_all(orders_query)
-    return dict_list_from_records(orders)
 
 
 async def quote_magic(
@@ -171,13 +203,8 @@ async def make_new_quote(
         server: NTProServer
 ):
     from models import server_messages
-    
-    instrument_id = randint(1, 3)
-    inst_query = select(instruments_table).where(instruments_table.c.id == instrument_id)
-    instrument = await database.fetch_one(inst_query)
-    if instrument is None:
-        return server_messages.ErrorInfo(reason=f'Instrument with id={id} does not exist')
 
+    instrument_id = randint(1, 3)
     quote_values = sorted([uniform(30, 40) for _ in range(4)])
 
     quotes_query = quotes_table.insert().values(
@@ -199,7 +226,8 @@ async def get_broadcast_info(
         quotes_table.c.bid,
         quotes_table.c.offer,
         quotes_table.c.min_amount,
-        quotes_table.c.max_amount).where(
+        quotes_table.c.max_amount,
+        quotes_table.c.timestamp).where(
         quotes_table.c.instrument == instrument_id
         ).order_by(asc(quotes_table.c.timestamp))
     quotes = await database.fetch_all(quotes_query)

@@ -31,7 +31,7 @@ metadata = sqlalchemy.MetaData()
 instruments_table = sqlalchemy.Table(
     'instruments',
     metadata,
-    Column('id', Integer, primary_key=True),
+    Column('id', Integer, primary_key=True, autoincrement=True),
     ReqColumn('name', String, unique=True),
 )
 
@@ -71,8 +71,9 @@ orders_table = sqlalchemy.Table(
                                        ondelete="CASCADE")),
     ReqColumn('side', ENUM(OrderSide)),
     ReqColumn('status', ENUM(OrderStatus)),
-    ReqColumn('amount', DECIMAL),
+    ReqColumn('amount', Integer),
     ReqColumn('price', DECIMAL),
     ReqColumn('address', String),
-    ReqColumn('timestamp', DateTime()),
+    ReqColumn('creation_time', DateTime()),
+    ReqColumn('change_time', DateTime()),
 )

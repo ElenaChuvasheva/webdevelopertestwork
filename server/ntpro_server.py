@@ -33,10 +33,10 @@ class NTProServer:
                 response = await message.process(self, websocket)
                 await self.send(response, websocket)
             except asyncio.TimeoutError:
-                if randrange(0, 1000) %5 == 0:
-                    await quote_magic(self)
-                if randrange(0, 1000) % 5 == 0:
-                    await order_magic(self, websocket)
+                #if randrange(0, 1000) %5 == 0:
+                await quote_magic(self)
+                #if randrange(0, 1000) % 5 == 0:
+                await order_magic(self, websocket)
                 await websocket.send_text(str(websocket.client))
             except pydantic.ValidationError as ex:
                 await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)
@@ -49,5 +49,7 @@ class NTProServer:
 
     @staticmethod
     async def send(message: base.MessageT, websocket: fastapi.WebSocket):
-        await websocket.send_json(server_messages.ServerEnvelope(message_type=message.get_type(),
-                                                                 message=message.dict(by_alias=True)).dict(by_alias=True))
+#        print(server_messages.ServerEnvelope(message_type=message.get_type(),
+#                                                                 message=message.dict(by_alias=True)))
+        await websocket.send_text(server_messages.ServerEnvelope(message_type=message.get_type(),
+                                                                 message=message.dict(by_alias=True)).json(by_alias=True))

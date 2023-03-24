@@ -27,6 +27,7 @@ async def get_instrument(message):
 
 async def fetch_query_one_obj(query):
     object = await database.fetch_one(query)
+#    print(object._mapping)
     if not object:
         raise KeyError(f'Required object does not exist. Query: {query}')
     return dict_from_record(object)

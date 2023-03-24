@@ -3,10 +3,12 @@ from __future__ import annotations
 import abc
 import asyncio
 import decimal
+import uuid
+from datetime import datetime
 from typing import TypeVar
 
 import pydantic
-from enums import ClientMessageType, ServerMessageType
+from enums import ClientMessageType, OrderSide, OrderStatus, ServerMessageType
 
 # порядок следования функций, классов?
 
@@ -17,23 +19,6 @@ def snake_to_camel(snake_str: str) -> str:
     components = snake_str.split('_')
     return components[0] + ''.join(x.title() for x in components[1:])
 
-
-def dict_from_type_to_str(values, Type):
-    for key, value in values.items():
-        if isinstance(value, Type):
-            values[key] = str(values[key])
-    return values
-
-def decimal_round(values, digits):
-    quantizer = decimal.Decimal('1.' + ''.join(['0' for _ in range(digits)]))
-    for key, value in values.items():
-        if isinstance(value, decimal.Decimal):
-            values[key] = value.quantize(quantizer)
-    return values
-
-def decimal_to_str(values, digits):
-    values = decimal_round(values, digits)
-    return dict_from_type_to_str(values, decimal.Decimal)
 
 class Camel:
     alias_generator = snake_to_camel
@@ -71,12 +56,41 @@ class Quote(pydantic.BaseModel):
     offer: decimal.Decimal
     min_amount: decimal.Decimal
     max_amount: decimal.Decimal
+    timestamp: datetime
 
     class Config(Camel):
         pass
 
-    @pydantic.root_validator
-    def decimal_to_str_validator(cls, values):
-        return decimal_to_str(values, 2)
+#    @pydantic.validator('bid', 'offer', 'min_amount', 'max_amount', pre=True)
+#    def validate_decimals(cls, value):
+#        return str(value.quantize(decimal.Decimal('1.00')))
+
+class Order(pydantic.BaseModel):
+    creation_time: datetime
+    uuid: uuid.UUID
+    change_time: datetime
+    status: OrderStatus
+    side: OrderSide
+    price: decimal.Decimal
+    amount: int
+    instrument: str
+
+    @pydantic.validator('status', pre=True)
+    def validate_status(cls, value):
+        return OrderStatus[value]
+
+    @pydantic.validator('side', pre=True)
+    def validate_side(cls, value):
+        return OrderSide[value]
+
+    class Config(Camel):
+        pass
+
+class Instrument(pydantic.BaseModel):
+    id: int
+    name: str
+
+    class Config(Camel):
+        pass
 
 MessageT = TypeVar('MessageT', bound=Message)
