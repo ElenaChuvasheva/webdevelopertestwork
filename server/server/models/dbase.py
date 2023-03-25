@@ -5,11 +5,12 @@ from functools import partial
 import databases
 import sqlalchemy
 from dotenv import load_dotenv
-from enums import OrderSide, OrderStatus
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.types import DECIMAL
+
+from server.enums import OrderSide, OrderStatus
 
 load_dotenv()
 

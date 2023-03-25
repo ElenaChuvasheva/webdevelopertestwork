@@ -2,13 +2,14 @@ import mimetypes
 import pathlib
 
 import fastapi
-from models.dbase import database
-from ntpro_server import NTProServer
 from websockets.exceptions import ConnectionClosedOK
+
+from server.models.dbase import database
+from server.ntpro_server import NTProServer
 
 api = fastapi.FastAPI()
 server = NTProServer()
-html = pathlib.Path('test.html').read_text()
+html = (pathlib.Path('server') / pathlib.Path('test.html')).read_text()
 
 @api.on_event('startup')
 async def startup():

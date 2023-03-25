@@ -2,8 +2,9 @@ from typing import List
 
 import fastapi
 from databases.backends.postgres import Record
-from models.dbase import database, instruments_table, subscribes_table
 from sqlalchemy import select
+
+from server.models.dbase import database, instruments_table, subscribes_table
 
 
 async def delete_users_subscribes(websocket: fastapi.WebSocket):
@@ -31,3 +32,7 @@ async def fetch_query_one_obj(query):
     if not object:
         raise KeyError(f'Required object does not exist. Query: {query}')
     return dict_from_record(object)
+
+async def get_instrument_dict_by_id(id):
+    query = select(instruments_table).where(instruments_table.c.id == id)
+    return await fetch_query_one_obj(query)

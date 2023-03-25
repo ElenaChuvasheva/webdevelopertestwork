@@ -2,12 +2,14 @@ import csv
 import os
 import uuid
 from datetime import datetime
+
 from dotenv import load_dotenv
-from models.dbase import quotes_table, instruments_table
 from sqlalchemy import create_engine
 
+from server.models.dbase import instruments_table, quotes_table
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CSV_DIR = os.path.join(BASE_DIR, 'server', 'data')
+CSV_DIR = os.path.join(BASE_DIR, 'server', 'server', 'data')
 load_dotenv()
 
 DB_NAME = os.getenv("DB_NAME", "exchange")
@@ -37,6 +39,7 @@ def create_object(DBClass, row):
                   'offer': row[3], 'min_amount': row[4], 'max_amount': row[5]}
     with sync_engine.begin() as conn:
         conn.execute(DBClass.insert(), kwargs)
+        # закрывать подключение?
     
 
 def read_to_DB(filename, DBClass):

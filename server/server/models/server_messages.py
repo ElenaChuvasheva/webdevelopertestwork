@@ -5,8 +5,9 @@ import uuid
 from typing import Dict, TypeVar
 
 import bidict as bidict
-import enums
-from models.base import Envelope, Instrument, Message, Order, Quote
+
+from server import enums
+from server.models.base import Envelope, Instrument, Message, Order, Quote
 
 
 class ServerMessage(Message):

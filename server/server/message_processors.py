@@ -7,11 +7,13 @@ from random import choice, randint, uniform
 from typing import TYPE_CHECKING
 
 import asyncpg
-from enums import OrderSide, OrderStatus
-from models.dbase import (database, instruments_table, orders_table,
-                          quotes_table, subscribes_table)
 from sqlalchemy import asc, select
-from utils import dict_list_from_records, fetch_query_one_obj, get_instrument
+
+from server.enums import OrderSide, OrderStatus
+from server.models.dbase import (database, instruments_table, orders_table,
+                                 quotes_table, subscribes_table)
+from server.utils import (dict_list_from_records, fetch_query_one_obj,
+                          get_instrument)
 
 if TYPE_CHECKING:
     import fastapi
@@ -19,11 +21,11 @@ if TYPE_CHECKING:
     from server.models import client_messages
     from server.ntpro_server import NTProServer
 
-async def say_test(websocket: fastapi.WebSocket):
-    await websocket.send_text('test')
+# async def say_test(websocket: fastapi.WebSocket):
+#    await websocket.send_text('test')
 
-async def say_lol(websocket: fastapi.WebSocket):
-    await websocket.send_text('lol')
+# async def say_lol(websocket: fastapi.WebSocket):
+#    await websocket.send_text('lol')
 
 
 async def subscribe_market_data_processor(
@@ -32,7 +34,7 @@ async def subscribe_market_data_processor(
         message: client_messages.SubscribeMarketData,
 ):
 
-    from models import server_messages
+    from server.models import server_messages
 
     id = message.dict().get('instrument')
     inst_query = select(instruments_table).where(instruments_table.c.id == id)
@@ -60,7 +62,7 @@ async def unsubscribe_market_data_processor(
         websocket: fastapi.WebSocket,
         message: client_messages.UnsubscribeMarketData,
 ):
-    from models import server_messages
+    from server.models import server_messages
 
     uuid = message.dict().get('subscription_id')
     unsubscribe_query = subscribes_table.delete().where(
@@ -80,7 +82,7 @@ async def place_order_processor(
         websocket: fastapi.WebSocket,
         message: client_messages.PlaceOrder,
 ):
-    from models import server_messages
+    from server.models import server_messages
 
     instrument_id = await get_instrument(message)
 
@@ -104,7 +106,7 @@ async def cancel_order_processor(
         websocket: fastapi.WebSocket,
         message: client_messages.PlaceOrder,
 ):
-    from models import server_messages
+    from server.models import server_messages
     uuid = message.dict().get('order_id')
 
     cancel_query = orders_table.update().where(
@@ -121,8 +123,8 @@ async def get_orders_processor(
         websocket: fastapi.WebSocket,
         message: client_messages.PlaceOrder,
 ):
-    from models import server_messages
-    from models.base import Order
+    from server.models import server_messages
+    from server.models.base import Order
 
     # потом вернуть where
     orders_query = select(orders_table.c.creation_time,
@@ -135,7 +137,8 @@ async def get_orders_processor(
                           instruments_table.c.name.label('instrument')
                           ).select_from(
         orders_table.join(instruments_table)).where(
-        orders_table.c.address == str(websocket.client))
+        orders_table.c.address == str(websocket.client)).order_by(
+        orders_table.c.creation_time)
     orders_dict_list = dict_list_from_records(
         await database.fetch_all(orders_query))
     # print(orders_dict_list)
@@ -147,10 +150,10 @@ async def get_instruments_processor(
         websocket: fastapi.WebSocket,
         message: client_messages.PlaceOrder,
 ):
-    from models import server_messages
-    from models.base import Instrument
+    from server.models import server_messages
+    from server.models.base import Instrument
 
-    instruments_query = select(instruments_table)
+    instruments_query = select(instruments_table).order_by(instruments_table.c.id)
     instruments_dict_list = dict_list_from_records(
         await database.fetch_all(instruments_query))
 
@@ -161,7 +164,7 @@ async def order_magic(
         server: NTProServer,
         websocket: fastapi.WebSocket
 ):    
-    from models import server_messages
+    from server.models import server_messages
 
     orders_query = select(orders_table.c.uuid).where(
         orders_table.c.address == str(websocket.client),
@@ -202,8 +205,6 @@ async def quote_magic(
 async def make_new_quote(
         server: NTProServer
 ):
-    from models import server_messages
-
     instrument_id = randint(1, 3)
     quote_values = sorted([uniform(30, 40) for _ in range(4)])
 
@@ -244,8 +245,8 @@ async def get_broadcast_info(
 
 async def broadcast_market_data(server, quotes_dict_list,
                                 subscribes_dict_list, instrument_id):
-    from models import server_messages
-    from models.base import Quote
+    from server.models import server_messages
+    from server.models.base import Quote
 
     quotes_list = [Quote(**x) for x in quotes_dict_list]
 

@@ -5,12 +5,12 @@ import uuid
 from typing import TYPE_CHECKING, TypeVar
 
 import bidict as bidict
-import enums
 import fastapi
-import message_processors
 import pydantic
-from models.base import Envelope, Message
-from models.server_messages import ServerMessageT
+
+from server import enums, message_processors
+from server.models.base import Envelope, Message
+from server.models.server_messages import ServerMessageT
 
 if TYPE_CHECKING:
     from server.ntpro_server import NTProServer

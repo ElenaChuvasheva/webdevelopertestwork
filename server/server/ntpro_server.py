@@ -5,9 +5,10 @@ from random import randrange
 
 import fastapi
 import pydantic
-from message_processors import order_magic, quote_magic
-from models import base, client_messages, server_messages
-from utils import delete_users_subscribes
+
+from server.message_processors import order_magic, quote_magic
+from server.models import base, client_messages, server_messages
+from server.utils import delete_users_subscribes
 
 
 class NTProServer:

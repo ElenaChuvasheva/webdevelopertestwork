@@ -8,7 +8,9 @@ from datetime import datetime
 from typing import TypeVar
 
 import pydantic
-from enums import ClientMessageType, OrderSide, OrderStatus, ServerMessageType
+
+from server.enums import (ClientMessageType, OrderSide, OrderStatus,
+                          ServerMessageType)
 
 # порядок следования функций, классов?
 
