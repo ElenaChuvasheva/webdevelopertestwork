@@ -9,15 +9,15 @@ from server.ntpro_server import NTProServer
 
 api = fastapi.FastAPI()
 server = NTProServer()
-html = (pathlib.Path('server') / pathlib.Path('test.html')).read_text()
+html = (pathlib.Path('server') / pathlib.Path('index.html')).read_text()
 
-@api.on_event('startup')
-async def startup():
-    await database.connect()
+#@api.on_event('startup')
+#async def startup():
+#    await database.connect()
 
-@api.on_event('shutdown')
-async def shutdown():
-    await database.disconnect()
+#@api.on_event('shutdown')
+#async def shutdown():
+#    await database.disconnect()
 
 @api.get('/')
 async def get():

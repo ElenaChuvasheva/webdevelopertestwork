@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import abc
 import asyncio
+import datetime
 import decimal
+import enum
 import uuid
-from datetime import datetime
 from typing import TypeVar
 
 import pydantic
+from fastapi import WebSocket
 
-from server.enums import (ClientMessageType, OrderSide, OrderStatus,
-                          ServerMessageType)
+from server.enums import (ClientMessageType, Instrument, OrderSide,
+                          OrderStatus, ServerMessageType)
 
 # порядок следования функций, классов?
 
@@ -25,6 +27,7 @@ def snake_to_camel(snake_str: str) -> str:
 class Camel:
     alias_generator = snake_to_camel
     allow_population_by_field_name = True
+
 
 class Envelope(pydantic.BaseModel, abc.ABC):
     class Config(Camel):
@@ -58,7 +61,8 @@ class Quote(pydantic.BaseModel):
     offer: decimal.Decimal
     min_amount: decimal.Decimal
     max_amount: decimal.Decimal
-    timestamp: datetime
+    timestamp: datetime.datetime = pydantic.Field(
+        default_factory=datetime.datetime.now)
 
     class Config(Camel):
         pass
@@ -67,32 +71,45 @@ class Quote(pydantic.BaseModel):
 #    def validate_decimals(cls, value):
 #        return str(value.quantize(decimal.Decimal('1.00')))
 
-class Order(pydantic.BaseModel):
-    creation_time: datetime
-    uuid: uuid.UUID
-    change_time: datetime
-    status: OrderStatus
+class OrderIn(pydantic.BaseModel):
+    creation_time: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.now)
+#    uuid: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
+    change_time: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.now)
+    status: OrderStatus = OrderStatus.active
     side: OrderSide
     price: decimal.Decimal
     amount: int
-    instrument: str
+    instrument: Instrument
 
-    @pydantic.validator('status', pre=True)
-    def validate_status(cls, value):
-        return OrderStatus[value]
+#    class Config(Camel):
+#        pass
+#        json_encoders = {OrderStatus | OrderSide: lambda e: e.name}
 
-    @pydantic.validator('side', pre=True)
-    def validate_side(cls, value):
-        return OrderSide[value]
 
-    class Config(Camel):
-        pass
-
-class Instrument(pydantic.BaseModel):
-    id: int
-    name: str
+class OrderOut(OrderIn):
+    uuid: uuid.UUID
 
     class Config(Camel):
         pass
+
+#    @pydantic.validator('status', pre=True)
+#    def validate_status(cls, value):
+#        return OrderStatus[value]
+
+#    @pydantic.validator('side', pre=True)
+#    def validate_side(cls, value):
+#        return OrderSide[value]
+
+#    class Config(Camel):
+#        use_enums_values = True
+
+
+#class Subscribe(pydantic.BaseModel):
+#    uuid: uuid.UUID
+#    instrument: Instrument
+
+#    class Config(Camel):
+#        frozen = True
+    
 
 MessageT = TypeVar('MessageT', bound=Message)

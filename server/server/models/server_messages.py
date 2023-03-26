@@ -7,7 +7,7 @@ from typing import Dict, TypeVar
 import bidict as bidict
 
 from server import enums
-from server.models.base import Envelope, Instrument, Message, Order, Quote
+from server.models.base import Envelope, Message, OrderOut, Quote
 
 
 class ServerMessage(Message):
@@ -28,14 +28,14 @@ class ExecutionReport(ServerMessage):
 
 class MarketDataUpdate(ServerMessage):
     subscription_id: uuid.UUID
-    instrument: int
+    instrument: enums.Instrument
     quotes: list[Quote]
 
 class OrdersList(ServerMessage):
-    orders: list[Order]
+    orders: list[OrderOut]
 
-class InstrumentsList(ServerMessage):
-    instruments: list[Instrument]
+class OrderSaved(ServerMessage):
+    order_id: uuid.UUID
 
 class ServerEnvelope(Envelope):
     message_type: enums.ServerMessageType
@@ -44,7 +44,9 @@ class ServerEnvelope(Envelope):
         return _SERVER_MESSAGE_TYPE_BY_CLASS.inverse[self.message_type].parse_obj(self.message)
 
     class Config(Envelope.Config):
-        json_encoders = {enum.Enum: lambda e: e.name}
+        json_encoders = {enums.Instrument: lambda e: e.name.replace('_', '/').upper(),
+                         enums.OrderSide: lambda e: e.name,
+                         enums.OrderStatus: lambda e: e.name}
 
 
 _SERVER_MESSAGE_TYPE_BY_CLASS = bidict.bidict({
@@ -53,6 +55,6 @@ _SERVER_MESSAGE_TYPE_BY_CLASS = bidict.bidict({
     ExecutionReport: enums.ServerMessageType.execution_report,
     MarketDataUpdate: enums.ServerMessageType.market_data_update,
     OrdersList: enums.ServerMessageType.orders_list,
-    InstrumentsList: enums.ServerMessageType.instruments_list
+    OrderSaved: enums.ServerMessageType.order_saved,
 })
 ServerMessageT = TypeVar('ServerMessageT', bound=ServerMessage)

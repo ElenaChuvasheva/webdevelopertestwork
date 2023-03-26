@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-import uuid
 from datetime import datetime
 from decimal import Decimal
 from random import choice, randint, uniform
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 import asyncpg
+from bidict import bidict
 from sqlalchemy import asc, select
 
-from server.enums import OrderSide, OrderStatus
-from server.models.dbase import (database, instruments_table, orders_table,
-                                 quotes_table, subscribes_table)
-from server.utils import (dict_list_from_records, fetch_query_one_obj,
-                          get_instrument)
+from server.enums import Instrument, OrderSide, OrderStatus
+from server.models import server_messages
+from server.models.base import OrderIn, OrderOut, Quote
+from server.models.dbase import database, orders_table
 
 if TYPE_CHECKING:
     import fastapi
@@ -33,28 +33,10 @@ async def subscribe_market_data_processor(
         websocket: fastapi.WebSocket,
         message: client_messages.SubscribeMarketData,
 ):
-
-    from server.models import server_messages
-
-    id = message.dict().get('instrument')
-    inst_query = select(instruments_table).where(instruments_table.c.id == id)
-    instrument = await database.fetch_one(inst_query)
-    if instrument is None:
-        return server_messages.ErrorInfo(reason=f'Instrument with id={id} does not exist')
-
-    try:
-        subscribe_query = subscribes_table.insert().values(
-            instrument=id,
-            address=str(websocket.client),
-        ).returning(subscribes_table.c.uuid)
-        # subscribe = await database.fetch_one(subscribe_query)
-        # subscribe_dict = dict_from_record(subscribe)
-        subscribe_dict = await fetch_query_one_obj(subscribe_query)
-    except asyncpg.exceptions.UniqueViolationError:
-        return server_messages.ErrorInfo(reason='The subscription already exists')
-
-    return server_messages.SuccessInfo(
-        subscription_id=subscribe_dict.get('uuid'))
+    instrument = message.dict().get('instrument')
+    uuid=uuid4()
+    server.subscribes[websocket.client].update({uuid: instrument})
+    return server_messages.SuccessInfo(subscription_id=uuid)
 
 
 async def unsubscribe_market_data_processor(
@@ -62,108 +44,95 @@ async def unsubscribe_market_data_processor(
         websocket: fastapi.WebSocket,
         message: client_messages.UnsubscribeMarketData,
 ):
-    from server.models import server_messages
-
     uuid = message.dict().get('subscription_id')
-    unsubscribe_query = subscribes_table.delete().where(
-        subscribes_table.c.uuid == uuid).returning(subscribes_table.c.uuid)
-    # subscribe = await database.fetch_all(unsubscribe_query) 
-    subscribe_dict = await fetch_query_one_obj(unsubscribe_query)
-
-#    if not subscribe:
-#        return server_messages.ErrorInfo(reason='The subscription does not exist')            
-    # server.connections[websocket.client].subscriptions.append(asyncio.create_task(say_lol(websocket)))
-    return server_messages.SuccessInfo(
-        subscription_id=subscribe_dict.get('uuid'))
-
+    server.subscribes[websocket.client].pop(uuid)
+    return server_messages.SuccessInfo(subscription_id=uuid)
 
 async def place_order_processor(
         server: NTProServer,
         websocket: fastapi.WebSocket,
         message: client_messages.PlaceOrder,
 ):
-    from server.models import server_messages
-
-    instrument_id = await get_instrument(message)
-
-    order_query = orders_table.insert().values(
-        instrument=instrument_id,
-        side=message.dict().get('side'),
-        status=OrderStatus.active,
-        amount=message.dict().get('amount'),
-        price=message.dict().get('price'),        
-        address=str(websocket.client),
-        creation_time=datetime.now(),
-        change_time=datetime.now(),
-    ).returning(orders_table.c.uuid, orders_table.c.status)
-    order_dict = await fetch_query_one_obj(order_query)
-    
-    return server_messages.ExecutionReport(order_id=order_dict.get('uuid'),
-                                           order_status=OrderStatus.active)
+    new_order = OrderIn(**message.dict())
+    uuid = uuid4()
+    server.orders[websocket.client][uuid] = new_order
+    return server_messages.ExecutionReport(order_id=uuid,
+                                           order_status=new_order.status)
 
 async def cancel_order_processor(
         server: NTProServer,
         websocket: fastapi.WebSocket,
         message: client_messages.PlaceOrder,
 ):
-    from server.models import server_messages
     uuid = message.dict().get('order_id')
-
-    cancel_query = orders_table.update().where(
-        orders_table.c.uuid == uuid,
-        orders_table.c.status == OrderStatus.active).values(
-        status=OrderStatus.cancelled, change_time=datetime.now()).returning(orders_table.c.uuid)
-    cancelled_order_dict = await fetch_query_one_obj(cancel_query)
-
-    return server_messages.ExecutionReport(order_id=cancelled_order_dict.get('uuid'),
-                                           order_status=OrderStatus.cancelled)
+    order = server.orders[websocket.client].get(uuid)
+    if order.status == OrderStatus.active:
+        order.status = OrderStatus.cancelled
+    return server_messages.ExecutionReport(
+        order_id=uuid, order_status=order.status)
 
 async def get_orders_processor(
         server: NTProServer,
         websocket: fastapi.WebSocket,
         message: client_messages.PlaceOrder,
 ):
-    from server.models import server_messages
-    from server.models.base import Order
+#    orders_list = server.orders[websocket.client].values()
+#    for x in orders_list:
+#        print(x.dict())
+#    orders_list = server.orders[websocket.client].values()
+    orders_list = [OrderOut(
+        uuid=uuid, **values.dict()
+        ) for uuid, values in server.orders[websocket.client].items()]
+#    return server_messages.ErrorInfo(reason='lol')
+    # return server_messages.OrdersList(orders=server.orders[websocket.client].values())
+    return server_messages.OrdersList(orders=orders_list)
 
-    # потом вернуть where
-    orders_query = select(orders_table.c.creation_time,
-                          orders_table.c.change_time,
-                          orders_table.c.status,
-                          orders_table.c.side,
-                          orders_table.c.price,
-                          orders_table.c.amount,
-                          orders_table.c.uuid,
-                          instruments_table.c.name.label('instrument')
-                          ).select_from(
-        orders_table.join(instruments_table)).where(
-        orders_table.c.address == str(websocket.client)).order_by(
-        orders_table.c.creation_time)
-    orders_dict_list = dict_list_from_records(
-        await database.fetch_all(orders_query))
-    # print(orders_dict_list)
-    return server_messages.OrdersList(
-        orders=[Order(**x) for x in orders_dict_list])
-
-async def get_instruments_processor(
+async def save_order_processor(
         server: NTProServer,
         websocket: fastapi.WebSocket,
-        message: client_messages.PlaceOrder,
+        message: client_messages.SaveOrder,
 ):
-    from server.models import server_messages
-    from server.models.base import Instrument
+    uuid = message.dict().get('order_id')
+    order = server.orders[websocket.client].get(uuid)
+    order_query = orders_table.insert().values(
+        uuid=uuid, address=str(websocket.client), **order.dict()).returning(
+        orders_table.c.uuid)
+    
+    await database.connect()
+    record = await database.fetch_one(order_query)
+    uuid_from_db = dict(zip(record, record.values())).get('uuid')
+    await database.disconnect()
+    return server_messages.OrderSaved(order_id=uuid_from_db)
 
-    instruments_query = select(instruments_table).order_by(instruments_table.c.id)
-    instruments_dict_list = dict_list_from_records(
-        await database.fetch_all(instruments_query))
 
-    return server_messages.InstrumentsList(
-        instruments=[Instrument(**x) for x in instruments_dict_list])
+'''        quotes_query = quotes_table.insert().values(
+        instrument=instrument_id,
+        timestamp=datetime.now(),
+        bid=Decimal.from_float(quote_values[1]),
+        offer=Decimal.from_float(quote_values[2]),
+        min_amount=Decimal.from_float(quote_values[0]),
+        max_amount=Decimal.from_float(quote_values[3])
+    )    
+    await database.fetch_one(quotes_query)'''
 
 async def order_magic(
         server: NTProServer,
         websocket: fastapi.WebSocket
-):    
+):
+    orders = server.orders[websocket.client]
+    active_orders_keys = [key for key, value in orders.items() if value.status == OrderStatus.active]
+    if not active_orders_keys:
+        return
+    key_change = choice(active_orders_keys)
+    order_change = orders[key_change]
+    # print(order_change)
+    order_change.status = choice(
+        [OrderStatus.filled, OrderStatus.rejected])
+    await server.send(server_messages.ExecutionReport(
+        order_id=key_change,
+        order_status=order_change.status), websocket)
+    
+    '''
     from server.models import server_messages
 
     orders_query = select(orders_table.c.uuid).where(
@@ -171,7 +140,6 @@ async def order_magic(
         orders_table.c.status == OrderStatus.active)
     orders_dict_list = dict_list_from_records(
         await database.fetch_all(orders_query))
-    # print(orders_dict_list)
     if not orders_dict_list:
         return
     changed_orders_dict = await change_order_random(orders_dict_list)
@@ -179,9 +147,9 @@ async def order_magic(
         order_id=changed_orders_dict.get('uuid'),
         order_status=OrderStatus[changed_orders_dict.get('status')]),
         websocket)
+'''
 
-
-async def change_order_random(orders_dict_list):
+'''async def change_order_random(orders_dict_list):
     order_to_change = choice(orders_dict_list)
     uuid = order_to_change.get('uuid')
     new_status = choice([OrderStatus.filled, OrderStatus.rejected])
@@ -190,17 +158,36 @@ async def change_order_random(orders_dict_list):
         status=new_status, change_time=datetime.now()).returning(
         orders_table.c.uuid, orders_table.c.status)
     return await fetch_query_one_obj(change_query)
-
+'''
 
 async def quote_magic(
         server: NTProServer        
 ):
+    instrument = choice(list(Instrument))
+    quote_values = sorted([uniform(30, 40) for _ in range(4)])
+    server.quotes[instrument].append(Quote(
+        bid=Decimal.from_float(quote_values[1]),
+        offer=Decimal.from_float(quote_values[2]),
+        min_amount=Decimal.from_float(quote_values[0]),
+        max_amount=Decimal.from_float(quote_values[3])))
+    # print(server.quotes)
+    for client, client_subscribes in server.subscribes.items():
+        # print(client_subscribes.values(), instrument.value)
+        # print(instrument in client_subscribes.values())
+        if instrument in client_subscribes.values():
+            websocket = server.connections.get(client)
+            await server.send(
+                server_messages.MarketDataUpdate(
+                subscription_id=client_subscribes.inverse.get(instrument),
+                instrument=instrument,
+                quotes=server.quotes[instrument]), websocket)
+
+    '''
     instrument_id = await make_new_quote(server)
     quotes_dict_list, subscribes_dict_list = await get_broadcast_info(
         instrument_id)
     await broadcast_market_data(server, quotes_dict_list,
                                 subscribes_dict_list, instrument_id)
-
 
 async def make_new_quote(
         server: NTProServer
@@ -242,7 +229,6 @@ async def get_broadcast_info(
 
     return (quotes_dict_list, subscribes_dict_list)
 
-
 async def broadcast_market_data(server, quotes_dict_list,
                                 subscribes_dict_list, instrument_id):
     from server.models import server_messages
@@ -259,3 +245,4 @@ async def broadcast_market_data(server, quotes_dict_list,
                 subscription_id=subscribes_dict.get('uuid'),
                 instrument=instrument_id,
                 quotes=quotes_list), websocket)
+'''

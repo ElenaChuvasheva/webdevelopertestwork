@@ -9,7 +9,7 @@ class ClientMessageType(enum.IntEnum):
     place_order = enum.auto()
     cancel_order = enum.auto()
     get_orders = enum.auto()
-    get_instruments = enum.auto()
+    save_order = enum.auto()
 
 
 class ServerMessageType(enum.IntEnum):
@@ -18,7 +18,7 @@ class ServerMessageType(enum.IntEnum):
     execution_report = enum.auto()
     market_data_update = enum.auto()
     orders_list = enum.auto()
-    instruments_list = enum.auto()
+    order_saved = enum.auto()
 
 
 class OrderSide(enum.Enum):
@@ -33,8 +33,7 @@ class OrderStatus(enum.Enum):
     cancelled = enum.auto()
 
 
-# @enum.unique
-# class Instrument(str, enum.Enum):
-#    eur_usd = 'EUR/USD'
-#    eur_rub = 'EUR/RUB'
-#    usd_rub = 'USD/RUB'
+class Instrument(enum.Enum):
+    eur_usd = enum.auto()
+    eur_rub = enum.auto()
+    usd_rub = enum.auto()

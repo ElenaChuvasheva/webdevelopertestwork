@@ -1,27 +1,36 @@
 import asyncio
 import json
-import time
 from random import randrange
+from typing import Any
 
 import fastapi
 import pydantic
+from bidict import bidict
 
+from server.enums import Instrument
 from server.message_processors import order_magic, quote_magic
 from server.models import base, client_messages, server_messages
-from server.utils import delete_users_subscribes
 
 
 class NTProServer:
     def __init__(self):
         self.connections: dict[str, fastapi.WebSocket] = {}
-        
+        # аннотировать потом
+        self.subscribes = {}
+        self.orders = {}
+        self.quotes = dict(zip(Instrument, [[] for x in range(len(Instrument))]))
+
     async def connect(self, websocket: fastapi.WebSocket):
         await websocket.accept()
-        self.connections[str(websocket.client)] = websocket
+        self.connections[websocket.client] = websocket
+        self.subscribes[websocket.client] = bidict()
+        self.orders[websocket.client] = {}
 
     async def disconnect(self, websocket: fastapi.WebSocket):
-        await delete_users_subscribes(websocket)
-        self.connections.pop(str(websocket.client))
+        self.connections.pop(websocket.client)
+        self.subscribes.pop(websocket.client)
+        self.orders.pop(websocket.client)
+
 
     # вариант без исключений с таймером?
     # рандом по времени изменения котировок, по значениям
@@ -36,8 +45,7 @@ class NTProServer:
             except asyncio.TimeoutError:
                 #if randrange(0, 1000) %5 == 0:
                 await quote_magic(self)
-                #if randrange(0, 1000) % 5 == 0:
-                await order_magic(self, websocket)
+                # await order_magic(self, websocket)
                 await websocket.send_text(str(websocket.client))
             except pydantic.ValidationError as ex:
                 await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)
@@ -51,6 +59,6 @@ class NTProServer:
     @staticmethod
     async def send(message: base.MessageT, websocket: fastapi.WebSocket):
 #        print(server_messages.ServerEnvelope(message_type=message.get_type(),
-#                                                                 message=message.dict(by_alias=True)))
+#                                                                 message=message.dict(by_alias=True)).dict(by_alias=True))
         await websocket.send_text(server_messages.ServerEnvelope(message_type=message.get_type(),
                                                                  message=message.dict(by_alias=True)).json(by_alias=True))

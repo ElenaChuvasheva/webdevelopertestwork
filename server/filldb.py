@@ -29,7 +29,7 @@ def read_file(filename):
     return reader
 
 
-def create_object(DBClass, row):
+def create_object(DBClass, row, engine):
     if DBClass == instruments_table:
         kwargs = {'id': int(row[0]), 'name': row[1]}
     elif DBClass == quotes_table:
@@ -37,16 +37,16 @@ def create_object(DBClass, row):
                   'instrument': int(row[1]),
                   'timestamp': datetime.now(), 'bid': row[2],
                   'offer': row[3], 'min_amount': row[4], 'max_amount': row[5]}
-    with sync_engine.begin() as conn:
+    with engine.begin() as conn:
         conn.execute(DBClass.insert(), kwargs)
         # закрывать подключение?
     
 
-def read_to_DB(filename, DBClass):
+def read_to_DB(filename, DBClass, engine):
     reader = read_file(filename)
     for row in reader:
-        create_object(DBClass, row)
+        create_object(DBClass, row, engine)
 
-read_to_DB('instruments.csv', instruments_table)
-read_to_DB('quotes.csv', quotes_table)
+read_to_DB('instruments.csv', instruments_table, sync_engine)
+read_to_DB('quotes.csv', quotes_table, sync_engine)
 
