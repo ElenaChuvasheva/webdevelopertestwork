@@ -6,8 +6,7 @@ from random import choice, randint, uniform
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-import asyncpg
-from bidict import bidict
+from bidict import ValueDuplicationError, bidict
 from sqlalchemy import asc, select
 
 from server.enums import Instrument, OrderSide, OrderStatus
@@ -35,7 +34,10 @@ async def subscribe_market_data_processor(
 ):
     instrument = message.dict().get('instrument')
     uuid=uuid4()
-    server.subscribes[websocket.client].update({uuid: instrument})
+    try:
+        server.subscribes[websocket.client].update({uuid: instrument})
+    except ValueDuplicationError:
+        return server_messages.ErrorInfo(reason='The subscribe already exists')
     return server_messages.SuccessInfo(subscription_id=uuid)
 
 
@@ -45,7 +47,10 @@ async def unsubscribe_market_data_processor(
         message: client_messages.UnsubscribeMarketData,
 ):
     uuid = message.dict().get('subscription_id')
-    server.subscribes[websocket.client].pop(uuid)
+    try:
+        server.subscribes[websocket.client].pop(uuid)
+    except KeyError:
+        return server_messages.ErrorInfo(reason='The subscribe does not exist')
     return server_messages.SuccessInfo(subscription_id=uuid)
 
 async def place_order_processor(

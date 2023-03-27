@@ -18,7 +18,7 @@ class NTProServer:
         # аннотировать потом
         self.subscribes = {}
         self.orders = {}
-        self.quotes = dict(zip(Instrument, [[] for x in range(len(Instrument))]))
+        self.quotes = dict(zip(Instrument, [[] for _ in range(len(Instrument))]))
 
     async def connect(self, websocket: fastapi.WebSocket):
         await websocket.accept()
@@ -45,16 +45,16 @@ class NTProServer:
             except asyncio.TimeoutError:
                 #if randrange(0, 1000) %5 == 0:
                 await quote_magic(self)
-                # await order_magic(self, websocket)
+                await order_magic(self, websocket)
                 await websocket.send_text(str(websocket.client))
             except pydantic.ValidationError as ex:
                 await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)
             except json.decoder.JSONDecodeError:
                 await self.send(server_messages.ErrorInfo(
                     reason='The message is not a valid JSON'), websocket)
-            except Exception as ex:
-                await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)
-                continue
+#            except Exception as ex:
+                # await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)
+#                continue
 
     @staticmethod
     async def send(message: base.MessageT, websocket: fastapi.WebSocket):
