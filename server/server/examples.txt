@@ -1,7 +1,7 @@
 подписка:
 {
     "messageType": 1,
-    "message": {"instrument": 2}
+    "message": {"instrument": 1}
 }
 
 отписка:

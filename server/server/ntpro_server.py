@@ -10,7 +10,13 @@ from bidict import bidict
 from server.enums import Instrument
 from server.message_processors import order_magic, quote_magic
 from server.models import base, client_messages, server_messages
+from server.pytest_conditions import RUN_FROM_PYTEST
 
+
+def quote_condition():
+    return True if RUN_FROM_PYTEST else randrange(0, 1000) %5 == 0
+
+TIMEOUT = 0.5 if RUN_FROM_PYTEST else 10
 
 class NTProServer:
     def __init__(self):
@@ -32,21 +38,19 @@ class NTProServer:
         self.orders.pop(websocket.client)
 
 
-    # вариант без исключений с таймером?
-    # рандом по времени изменения котировок, по значениям
     async def serve(self, websocket: fastapi.WebSocket):
         while True:
             try:
-                raw_envelope = await asyncio.wait_for(websocket.receive_json(), timeout=10)
+
+                raw_envelope = await asyncio.wait_for(websocket.receive_json(), timeout=TIMEOUT)
                 envelope = client_messages.ClientEnvelope.parse_obj(raw_envelope)
                 message = envelope.get_parsed_message()
                 response = await message.process(self, websocket)
                 await self.send(response, websocket)
             except asyncio.TimeoutError:
-                #if randrange(0, 1000) %5 == 0:
-                await quote_magic(self)
                 await order_magic(self, websocket)
-                await websocket.send_text(str(websocket.client))
+                if quote_condition():
+                    await quote_magic(self)
             except pydantic.ValidationError as ex:
                 await self.send(server_messages.ErrorInfo(reason=str(ex)), websocket)
             except json.decoder.JSONDecodeError:

@@ -10,10 +10,11 @@ from sqlalchemy.dialects.postgresql import ENUM, UUID
 from sqlalchemy.types import DECIMAL
 
 from server.enums import Instrument, OrderSide, OrderStatus
+from server.pytest_conditions import RUN_FROM_PYTEST
 
 load_dotenv()
 
-DB_NAME = os.getenv("DB_NAME", "exchange")
+DB_NAME = "test_db" if RUN_FROM_PYTEST else os.getenv("DB_NAME", "exchange")
 DB_USER = os.getenv("DB_USER", "user")
 DB_PASS = os.getenv("DB_PASS", "password")
 DB_HOST = os.getenv("DB_HOST", "localhost")

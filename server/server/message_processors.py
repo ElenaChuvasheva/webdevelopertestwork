@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 from decimal import Decimal
 from random import choice, randint, uniform
@@ -13,6 +14,11 @@ from server.enums import Instrument, OrderSide, OrderStatus
 from server.models import server_messages
 from server.models.base import OrderIn, OrderOut, Quote
 from server.models.dbase import database, orders_table
+from server.pytest_conditions import RUN_FROM_PYTEST
+
+
+def instrument_condition():
+    return Instrument.eur_usd if RUN_FROM_PYTEST else choice(list(Instrument))
 
 if TYPE_CHECKING:
     import fastapi
@@ -70,11 +76,17 @@ async def cancel_order_processor(
         message: client_messages.PlaceOrder,
 ):
     uuid = message.dict().get('order_id')
-    order = server.orders[websocket.client].get(uuid)
-    if order.status == OrderStatus.active:
-        order.status = OrderStatus.cancelled
-    return server_messages.ExecutionReport(
-        order_id=uuid, order_status=order.status)
+    try:
+        order = server.orders[websocket.client].get(uuid)
+        if order.status == OrderStatus.active:
+            order.status = OrderStatus.cancelled
+            order.change_time = datetime.now()
+        else:
+            return server_messages.ErrorInfo(reason=f'The order is {order.status.name}')
+        return server_messages.ExecutionReport(
+            order_id=uuid, order_status=order.status)
+    except AttributeError:
+        return server_messages.ErrorInfo(reason='The order does not exist')
 
 async def get_orders_processor(
         server: NTProServer,
@@ -99,26 +111,17 @@ async def save_order_processor(
 ):
     uuid = message.dict().get('order_id')
     order = server.orders[websocket.client].get(uuid)
+    if order is None:
+        return server_messages.ErrorInfo(reason='This order does not exist')
     order_query = orders_table.insert().values(
         uuid=uuid, address=str(websocket.client), **order.dict()).returning(
         orders_table.c.uuid)
     
     await database.connect()
     record = await database.fetch_one(order_query)
-    uuid_from_db = dict(zip(record, record.values())).get('uuid')
+    uuid_from_db = dict(zip(record, record._mapping.values())).get('uuid')
     await database.disconnect()
     return server_messages.OrderSaved(order_id=uuid_from_db)
-
-
-'''        quotes_query = quotes_table.insert().values(
-        instrument=instrument_id,
-        timestamp=datetime.now(),
-        bid=Decimal.from_float(quote_values[1]),
-        offer=Decimal.from_float(quote_values[2]),
-        min_amount=Decimal.from_float(quote_values[0]),
-        max_amount=Decimal.from_float(quote_values[3])
-    )    
-    await database.fetch_one(quotes_query)'''
 
 async def order_magic(
         server: NTProServer,
@@ -133,49 +136,21 @@ async def order_magic(
     # print(order_change)
     order_change.status = choice(
         [OrderStatus.filled, OrderStatus.rejected])
+    order_change.change_time = datetime.now()
     await server.send(server_messages.ExecutionReport(
         order_id=key_change,
         order_status=order_change.status), websocket)
-    
-    '''
-    from server.models import server_messages
-
-    orders_query = select(orders_table.c.uuid).where(
-        orders_table.c.address == str(websocket.client),
-        orders_table.c.status == OrderStatus.active)
-    orders_dict_list = dict_list_from_records(
-        await database.fetch_all(orders_query))
-    if not orders_dict_list:
-        return
-    changed_orders_dict = await change_order_random(orders_dict_list)
-    await server.send(server_messages.ExecutionReport(
-        order_id=changed_orders_dict.get('uuid'),
-        order_status=OrderStatus[changed_orders_dict.get('status')]),
-        websocket)
-'''
-
-'''async def change_order_random(orders_dict_list):
-    order_to_change = choice(orders_dict_list)
-    uuid = order_to_change.get('uuid')
-    new_status = choice([OrderStatus.filled, OrderStatus.rejected])
-    change_query = orders_table.update().where(
-        orders_table.c.uuid == uuid).values(
-        status=new_status, change_time=datetime.now()).returning(
-        orders_table.c.uuid, orders_table.c.status)
-    return await fetch_query_one_obj(change_query)
-'''
 
 async def quote_magic(
         server: NTProServer        
 ):
-    instrument = choice(list(Instrument))
+    instrument = instrument_condition()
     quote_values = sorted([uniform(30, 40) for _ in range(4)])
     server.quotes[instrument].append(Quote(
         bid=Decimal.from_float(quote_values[1]),
         offer=Decimal.from_float(quote_values[2]),
         min_amount=Decimal.from_float(quote_values[0]),
-        max_amount=Decimal.from_float(quote_values[3])))
-    # print(server.quotes)
+        max_amount=Decimal.from_float(quote_values[3])))    
     for client, client_subscribes in server.subscribes.items():
         # print(client_subscribes.values(), instrument.value)
         # print(instrument in client_subscribes.values())
@@ -187,67 +162,3 @@ async def quote_magic(
                 instrument=instrument,
                 quotes=server.quotes[instrument]), websocket)
 
-    '''
-    instrument_id = await make_new_quote(server)
-    quotes_dict_list, subscribes_dict_list = await get_broadcast_info(
-        instrument_id)
-    await broadcast_market_data(server, quotes_dict_list,
-                                subscribes_dict_list, instrument_id)
-
-async def make_new_quote(
-        server: NTProServer
-):
-    instrument_id = randint(1, 3)
-    quote_values = sorted([uniform(30, 40) for _ in range(4)])
-
-    quotes_query = quotes_table.insert().values(
-        instrument=instrument_id,
-        timestamp=datetime.now(),
-        bid=Decimal.from_float(quote_values[1]),
-        offer=Decimal.from_float(quote_values[2]),
-        min_amount=Decimal.from_float(quote_values[0]),
-        max_amount=Decimal.from_float(quote_values[3])
-    )    
-    await database.fetch_one(quotes_query)
-    return instrument_id
-
-
-async def get_broadcast_info(
-        instrument_id: int
-):
-    quotes_query = select(        
-        quotes_table.c.bid,
-        quotes_table.c.offer,
-        quotes_table.c.min_amount,
-        quotes_table.c.max_amount,
-        quotes_table.c.timestamp).where(
-        quotes_table.c.instrument == instrument_id
-        ).order_by(asc(quotes_table.c.timestamp))
-    quotes = await database.fetch_all(quotes_query)
-    quotes_dict_list = dict_list_from_records(quotes)
-    
-    subscr_query = select(
-        subscribes_table.c.address, subscribes_table.c.uuid).where(
-        subscribes_table.c.instrument == instrument_id)
-    subscr = await database.fetch_all(subscr_query)
-    subscribes_dict_list = dict_list_from_records(subscr)
-
-    return (quotes_dict_list, subscribes_dict_list)
-
-async def broadcast_market_data(server, quotes_dict_list,
-                                subscribes_dict_list, instrument_id):
-    from server.models import server_messages
-    from server.models.base import Quote
-
-    quotes_list = [Quote(**x) for x in quotes_dict_list]
-
-    for subscribes_dict in subscribes_dict_list:
-        address = subscribes_dict.get('address')
-        websocket = server.connections.get(address)
-        if websocket is not None:
-            await server.send(
-                server_messages.MarketDataUpdate(
-                subscription_id=subscribes_dict.get('uuid'),
-                instrument=instrument_id,
-                quotes=quotes_list), websocket)
-'''
