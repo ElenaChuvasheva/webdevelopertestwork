@@ -94,7 +94,7 @@ ALTER TABLE public.orders OWNER TO root;
 --
 
 COPY public.alembic_version (version_num) FROM stdin;
-cb24abc10f2d
+7e8364c20c54
 \.
 
 

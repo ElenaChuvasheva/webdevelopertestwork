@@ -6,10 +6,15 @@ services:
     ports: 
      - "5432:5432"
     volumes:
-      - db_value:/var/lib/postgresql/data/
+      - db_val:/var/lib/postgresql/data/
     env_file:
       - ./.env
-#    command: bash -c "createdb --username=root testdb"
+#    environment:
+#      POSTGRES_USER: root
+#      POSTGRES_DB: exchange
+#      POSTGRES_PASSWORD: root
+#    healthcheck:
+#      test: pg_isready --username=root --dbname=exchange
 
   web:
     build: .
@@ -17,9 +22,12 @@ services:
     ports:
      - "8000:8000"
     depends_on:
-      - db
+     - db
+#        condition: service_healthy
+
     env_file:
       - ./.env 
+#    command: sh -c './wait-for localhost:5432 -- cmd'
 
 volumes:
-  db_value:
+  db_val:

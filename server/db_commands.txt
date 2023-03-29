@@ -8,11 +8,9 @@ psql --username=postgres test_db < exchange_dump
 4. снять дамп с основной
 5. слить дамп в тестовую
 
-docker-compose exec -T db createdb --username=postgres exchange
 docker-compose exec -T web alembic upgrade head
-
 docker-compose exec -T db createdb --username=root test_db
 docker-compose exec -T db pg_dump --username=root exchange > exchange_dump
 docker-compose exec -T db psql --username=root test_db < exchange_dump
-
 docker-compose exec -T web pytest
+docker-compose exec -T db dropdb --username=root test_db

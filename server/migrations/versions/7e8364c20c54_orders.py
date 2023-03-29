@@ -1,8 +1,8 @@
 """orders
 
-Revision ID: cb24abc10f2d
+Revision ID: 7e8364c20c54
 Revises: 
-Create Date: 2023-03-26 19:14:49.726776
+Create Date: 2023-03-29 14:27:28.957135
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'cb24abc10f2d'
+revision = '7e8364c20c54'
 down_revision = None
 branch_labels = None
 depends_on = None
