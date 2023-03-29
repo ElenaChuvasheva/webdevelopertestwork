@@ -10,3 +10,5 @@ asyncpg==0.27.0
 python-dotenv==0.21.0
 pytest==7.2.2
 requests==2.28.2
+sqlalchemy-utils==0.40.0
+psycopg2-binary==2.9.5

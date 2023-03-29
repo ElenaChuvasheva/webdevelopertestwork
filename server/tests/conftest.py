@@ -1,5 +1,25 @@
-import pytest
+import os
 
+import pytest
+from alembic import command
+from alembic.config import Config
+from sqlalchemy_utils import create_database, drop_database
+
+from server.models import dbase
+
+os.environ['DB_NAME'] = 'test_db'
+
+@pytest.fixture(scope="module")
+def temp_db():
+    create_database(dbase.TEST_SQLALCHEMY_DATABASE_URL)
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    alembic_cfg = Config(os.path.join(base_dir, "alembic.ini"))
+    command.upgrade(alembic_cfg, "head")
+
+    try:
+        yield dbase.TEST_SQLALCHEMY_DATABASE_URL
+    finally:
+        drop_database(dbase.TEST_SQLALCHEMY_DATABASE_URL)
 
 @pytest.fixture
 def non_json_message():

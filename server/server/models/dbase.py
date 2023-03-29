@@ -14,14 +14,19 @@ from server.pytest_conditions import RUN_FROM_PYTEST
 
 load_dotenv()
 
-DB_NAME = "test_db" if RUN_FROM_PYTEST else os.getenv("DB_NAME", "exchange")
-DB_USER = os.getenv("DB_USER", "user")
-DB_PASS = os.getenv("DB_PASS", "password")
+DB_NAME = os.getenv("DB_NAME", "exchange")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "user")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
 
-SQLALCHEMY_DATABASE_URL = (f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
-database = databases.Database(SQLALCHEMY_DATABASE_URL)
+if RUN_FROM_PYTEST:
+    TEST_DB_NAME = 'test_db'
+    TEST_SQLALCHEMY_DATABASE_URL = (f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{DB_HOST}:{DB_PORT}/{TEST_DB_NAME}")
+    database = databases.Database(TEST_SQLALCHEMY_DATABASE_URL)
+else:
+    SQLALCHEMY_DATABASE_URL = (f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+    database = databases.Database(SQLALCHEMY_DATABASE_URL)
 
 ReqColumn = partial(Column, nullable=False)
 # UUIDColumn = partial(Column, UUID(as_uuid=True), primary_key=True,

@@ -16,8 +16,8 @@ config = context.config
 
 load_dotenv()
 section = config.config_ini_section
-config.set_section_option(section, "DB_USER", os.getenv('DB_USER'))
-config.set_section_option(section, "DB_PASS", os.getenv("DB_PASS"))
+config.set_section_option(section, "POSTGRES_USER", os.getenv('POSTGRES_USER'))
+config.set_section_option(section, "POSTGRES_PASSWORD", os.getenv("POSTGRES_PASSWORD"))
 config.set_section_option(section, "DB_NAME", os.getenv("DB_NAME"))
 config.set_section_option(section, "DB_HOST", os.getenv("DB_HOST"))
 config.set_section_option(section, "DB_PORT", os.getenv("DB_PORT"))

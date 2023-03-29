@@ -76,7 +76,7 @@ def test_cancel_processed_order(place_normal_order_message):
         assert (reason == 'The order is filled' 
                 or reason == 'The order is rejected')
 
-def test_normal_order_to_base(place_normal_order_message):
+def test_normal_order_to_base(place_normal_order_message, temp_db):
     client = TestClient(api)
     with client.websocket_connect("/ws/") as websocket:
         websocket.send_text(place_normal_order_message)
