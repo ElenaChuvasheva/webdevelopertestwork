@@ -1,5 +1,0 @@
-DB_NAME="exchange"
-DB_USER="postgres"
-DB_PASS="a0205cuva"
-DB_HOST="127.0.0.1"
-DB_PORT="5432"
