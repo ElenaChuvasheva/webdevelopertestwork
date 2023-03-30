@@ -12,6 +12,9 @@
 * выставлять заявки
 * отменять активные заявки
 
+## Технологии
+Python 3.10, FastAPI, Pytest, SQLAlchemy, Alembic, Docker, PostgreSQL
+
 ## API
 Все сообщения имеют общий `JSON` формат:
     
@@ -72,3 +75,43 @@ docker-compose up
 docker-compose exec -T web alembic upgrade head
 ```
 Проект с минимальным интерфейсом откроется по адресу http://127.0.0.1:8000/ . 
+
+## Примеры сообщений
+### Подписка на инструмент
+Запрос:
+```
+{
+    "messageType": 1,
+    "message": {"instrument": 1}
+}
+```
+Ответ:
+```
+{"messageType": 1, "message": {"subscriptionId": "46a122ae-f7ae-492e-900e-c9166d673c4d"}}
+```
+### Отписка от инструмента
+```
+{
+    "messageType": 2,
+    "message": {"subscriptionId": "0c11e37fc1e1433ea2732c39600ea577"}
+}
+```
+Ответ:
+```
+{"messageType": 1, "message": {"subscriptionId": "0c11e37fc1e1433ea2732c39600ea577"}}
+```
+### Размещение заявки
+```
+{
+    "messageType": 3,
+    "message": {"instrument": 2, "side": 1, "amount": 3, "price": 20}
+}
+```
+Ответ:
+```
+{"messageType": 3, "message": {"orderId": "85693ea2-2d9c-4d25-b9e3-105194d1a7fd", "orderStatus": "active"}}
+```
+### Сообщение с результатом обработки заявки
+```
+{"messageType": 3, "message": {"orderId": "85693ea2-2d9c-4d25-b9e3-105194d1a7fd", "orderStatus": "filled"}}
+```
