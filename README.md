@@ -89,7 +89,7 @@ docker-compose exec -T web alembic upgrade head
 ```
 {"messageType": 1, "message": {"subscriptionId": "46a122ae-f7ae-492e-900e-c9166d673c4d"}}
 ```
-### Отписка от инструмента
+#### Отписка от инструмента
 ```
 {
     "messageType": 2,
