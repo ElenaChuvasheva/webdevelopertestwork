@@ -17,6 +17,7 @@ def test_non_json(non_json_message):
         assert data['messageType'] == 2
         assert data['message']['reason'] == 'The message is not a valid JSON'
 
+
 def test_nonexisting_message_code(nonexisting_message_code):
     client = TestClient(api)
     with client.websocket_connect("/ws/") as websocket:

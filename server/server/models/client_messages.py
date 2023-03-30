@@ -24,7 +24,9 @@ class ClientEnvelope(Envelope):
 
 
 class ClientMessage(Message):
-    async def process(self: ClientMessageT, server: NTProServer, websocket: fastapi.WebSocket) -> ServerMessageT:        
+    async def process(self: ClientMessageT,
+                      server: NTProServer,
+                      websocket: fastapi.WebSocket) -> ServerMessageT:
         return await _MESSAGE_PROCESSOR_BY_CLASS[self.__class__](server, websocket, self)
 
     def get_type(self: ClientMessageT) -> enums.ClientMessageType:
@@ -49,11 +51,14 @@ class PlaceOrder(ClientMessage):
 class CancelOrder(ClientMessage):
     order_id: uuid.UUID
 
+
 class GetOrders(ClientMessage):
     pass
 
+
 class SaveOrder(ClientMessage):
     order_id: uuid.UUID
+
 
 _MESSAGE_PROCESSOR_BY_CLASS = {
     SubscribeMarketData: message_processors.subscribe_market_data_processor,

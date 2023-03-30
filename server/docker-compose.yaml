@@ -9,12 +9,6 @@ services:
       - db_val:/var/lib/postgresql/data/
     env_file:
       - ./.env
-#    environment:
-#      POSTGRES_USER: root
-#      POSTGRES_DB: exchange
-#      POSTGRES_PASSWORD: root
-#    healthcheck:
-#      test: pg_isready --username=root --dbname=exchange
 
   web:
     build: .
@@ -23,11 +17,9 @@ services:
      - "8000:8000"
     depends_on:
      - db
-#        condition: service_healthy
 
     env_file:
       - ./.env 
-#    command: sh -c './wait-for localhost:5432 -- cmd'
 
 volumes:
   db_val:

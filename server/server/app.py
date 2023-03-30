@@ -4,20 +4,12 @@ import pathlib
 import fastapi
 from websockets.exceptions import ConnectionClosedOK
 
-from server.models.dbase import database
 from server.ntpro_server import NTProServer
 
 api = fastapi.FastAPI()
 server = NTProServer()
 html = (pathlib.Path('server') / pathlib.Path('index.html')).read_text()
 
-#@api.on_event('startup')
-#async def startup():
-#    await database.connect()
-
-#@api.on_event('shutdown')
-#async def shutdown():
-#    await database.disconnect()
 
 @api.get('/')
 async def get():
@@ -28,7 +20,8 @@ async def get():
 async def get(path: pathlib.Path):
     static_file = (pathlib.Path('static') / path).read_text()
     mime_type, encoding = mimetypes.guess_type(path)
-    return fastapi.responses.PlainTextResponse(static_file, media_type=mime_type)
+    return fastapi.responses.PlainTextResponse(
+        static_file, media_type=mime_type)
 
 
 @api.websocket('/ws/')
