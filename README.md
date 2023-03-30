@@ -49,6 +49,7 @@ docker-compose exec web pytest
 ```
 
 ## API
+### Структура сообщений
 Все сообщения имеют общий `JSON` формат:
     
     {
@@ -80,8 +81,8 @@ docker-compose exec web pytest
     
 Чтобы отменить подписку, нужно отправить сообщение **UnsubscribeMarketData**.
 
-## Примеры сообщений
-### Подписка на инструмент
+### Примеры сообщений
+#### Подписка на инструмент
 Запрос:
 ```
 {
@@ -91,9 +92,12 @@ docker-compose exec web pytest
 ```
 Ответ:
 ```
-{"messageType": 1, "message": {"subscriptionId": "46a122ae-f7ae-492e-900e-c9166d673c4d"}}
+{
+    "messageType": 1,
+    "message": {"subscriptionId": "46a122ae-f7ae-492e-900e-c9166d673c4d"}
+}
 ```
-### Отписка от инструмента
+#### Отписка от инструмента
 ```
 {
     "messageType": 2,
@@ -102,9 +106,12 @@ docker-compose exec web pytest
 ```
 Ответ:
 ```
-{"messageType": 1, "message": {"subscriptionId": "0c11e37fc1e1433ea2732c39600ea577"}}
+{
+    "messageType": 1,
+    "message": {"subscriptionId": "0c11e37fc1e1433ea2732c39600ea577"}
+}
 ```
-### Размещение заявки
+#### Размещение заявки
 ```
 {
     "messageType": 3,
@@ -113,13 +120,19 @@ docker-compose exec web pytest
 ```
 Ответ:
 ```
-{"messageType": 3, "message": {"orderId": "85693ea2-2d9c-4d25-b9e3-105194d1a7fd", "orderStatus": "active"}}
+{
+    "messageType": 3,
+    "message": {"orderId": "85693ea2-2d9c-4d25-b9e3-105194d1a7fd", "orderStatus": "active"}
+}
 ```
-### Сообщение с результатом обработки заявки
+#### Сообщение с результатом обработки заявки
 ```
-{"messageType": 3, "message": {"orderId": "85693ea2-2d9c-4d25-b9e3-105194d1a7fd", "orderStatus": "filled"}}
+{
+    "messageType": 3,
+    "message": {"orderId": "85693ea2-2d9c-4d25-b9e3-105194d1a7fd", "orderStatus": "filled"}
+}
 ```
-### Отмена заявки
+#### Отмена заявки
 Запрос:
 ```
 {
@@ -127,4 +140,52 @@ docker-compose exec web pytest
     "message": {"orderId": "4a01e7fc-4cb5-4718-b563-9d049c6b0272"}
 }
 ```
-
+Ответ:
+```
+{
+    "messageType": 3,
+    "message": {"orderId": "4a01e7fc-4cb5-4718-b563-9d049c6b0272", "orderStatus": "cancelled"}
+}
+```
+#### Запрос всех своих заявок
+Запрос:
+```
+{
+    "messageType": 5,
+    "message": {}
+}
+```
+Ответ:
+```
+{
+    "messageType": 5,
+    "message": {"orders": [{"creationTime": "2023-03-30T11:34:01.456227", "changeTime": "2023-03-30T11:34:22.550857", "status": "rejected", "side": "buy", "price": 30, "amount": 2, "instrument": "EUR/RUB", "uuid": "8b4d17ca-db5b-4e44-808f-affbbb7656ab"}, {"creationTime": "2023-03-30T11:34:12.548832", "changeTime": "2023-03-30T11:34:12.548839", "status": "active", "side": "sell", "price": 20, "amount": 3, "instrument": "EUR/RUB", "uuid": "75c936d0-8ae1-4f20-9510-97f557b679d1"}]}
+}
+```
+#### Сохранение заявки в базу
+```
+{
+    "messageType": 6,
+    "message": {"orderId": "8b4d17ca-db5b-4e44-808f-affbbb7656ab"}
+}
+```
+Ответ:
+```
+{
+    "messageType": 6,
+    "message": {"orderId": "8b4d17ca-db5b-4e44-808f-affbbb7656ab"}
+}
+```
+#### Сообщение об изменении котировок:
+```
+{
+    "messageType": 4,
+    "message": {"subscriptionId": "634905d5-13f0-4cd6-8b62-1b5a24227029", "instrument": "USD/RUB", "quotes": [{"bid": 32.540866044239536, "offer": 32.768034070299606, "minAmount": 30.97320671154219, "maxAmount": 36.668907735148736, "timestamp": "2023-03-30T11:42:51.229960"}, {"bid": 35.30738166239448, "offer": 37.97198429333178, "minAmount": 34.039151483095445, "maxAmount": 38.928840172008506, "timestamp": "2023-03-30T11:43:01.231579"}]}
+}
+```
+#### Сообщение об ошибке:
+```
+{
+    "messageType": 2,
+    "message": {"reason": "The message is not a valid JSON"}}
+```
