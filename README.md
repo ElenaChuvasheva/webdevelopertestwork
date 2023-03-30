@@ -15,6 +15,39 @@
 ## Технологии
 Python 3.10, FastAPI, Pytest, SQLAlchemy, Alembic, Docker, PostgreSQL
 
+## Локальный запуск проекта
+Для запуска подойдёт Docker 20.10.21, Docker Compose 2.12.2.  
+Клонируйте репозиторий:
+```
+git@github.com:ElenaChuvasheva/webdevelopertestwork.git
+```
+Перейдите в папку webdevelopertestwork/server:
+```
+cd webdevelopertestwork\server
+```
+Создайте в этой папке файл .env с переменными окружения для работы с базой данных, значения имени пользователя и пароля даны для примера:
+```
+DB_NAME=exchange
+DB_HOST=db
+DB_PORT=5432
+POSTGRES_USER=root
+POSTGRES_DB=exchange
+POSTGRES_PASSWORD=root
+```
+В этой же папке запустите команду сборки контейнеров:
+```
+docker-compose up
+```
+Запустите миграции:
+```
+docker-compose exec -T web alembic upgrade head
+```
+Проект с минимальным интерфейсом откроется по адресу http://127.0.0.1:8000/ .
+Запуск тестов:
+```
+docker-compose exec web pytest
+```
+
 ## API
 Все сообщения имеют общий `JSON` формат:
     
@@ -47,35 +80,6 @@ Python 3.10, FastAPI, Pytest, SQLAlchemy, Alembic, Docker, PostgreSQL
     
 Чтобы отменить подписку, нужно отправить сообщение **UnsubscribeMarketData**.
 
-## Локальный запуск проекта
-Для запуска подойдёт Docker 20.10.21, Docker Compose 2.12.2.  
-Клонируйте репозиторий:
-```
-git@github.com:ElenaChuvasheva/webdevelopertestwork.git
-```
-Перейдите в папку webdevelopertestwork/server:
-```
-cd webdevelopertestwork\server
-```
-Создайте в этой папке файл .env с переменными окружения для работы с базой данных, значения имени пользователя и пароля даны для примера:
-```
-DB_NAME=exchange
-DB_HOST=db
-DB_PORT=5432
-POSTGRES_USER=root
-POSTGRES_DB=exchange
-POSTGRES_PASSWORD=root
-```
-В этой же папке запустите команду сборки контейнеров:
-```
-docker-compose up
-```
-Запустите миграции:
-```
-docker-compose exec -T web alembic upgrade head
-```
-Проект с минимальным интерфейсом откроется по адресу http://127.0.0.1:8000/ . 
-
 ## Примеры сообщений
 ### Подписка на инструмент
 Запрос:
@@ -89,7 +93,7 @@ docker-compose exec -T web alembic upgrade head
 ```
 {"messageType": 1, "message": {"subscriptionId": "46a122ae-f7ae-492e-900e-c9166d673c4d"}}
 ```
-#### Отписка от инструмента
+### Отписка от инструмента
 ```
 {
     "messageType": 2,
@@ -115,3 +119,12 @@ docker-compose exec -T web alembic upgrade head
 ```
 {"messageType": 3, "message": {"orderId": "85693ea2-2d9c-4d25-b9e3-105194d1a7fd", "orderStatus": "filled"}}
 ```
+### Отмена заявки
+Запрос:
+```
+{
+    "messageType": 4,
+    "message": {"orderId": "4a01e7fc-4cb5-4718-b563-9d049c6b0272"}
+}
+```
+
