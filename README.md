@@ -98,6 +98,7 @@ docker-compose exec web pytest
 }
 ```
 #### Отписка от инструмента
+Запрос:
 ```
 {
     "messageType": 2,
@@ -112,6 +113,7 @@ docker-compose exec web pytest
 }
 ```
 #### Размещение заявки
+Запрос:
 ```
 {
     "messageType": 3,
@@ -126,6 +128,7 @@ docker-compose exec web pytest
 }
 ```
 #### Сообщение с результатом обработки заявки
+Ответ:
 ```
 {
     "messageType": 3,
@@ -163,6 +166,7 @@ docker-compose exec web pytest
 }
 ```
 #### Сохранение заявки в базу
+Запрос:
 ```
 {
     "messageType": 6,
@@ -177,6 +181,7 @@ docker-compose exec web pytest
 }
 ```
 #### Сообщение об изменении котировок:
+Ответ:
 ```
 {
     "messageType": 4,
@@ -184,8 +189,10 @@ docker-compose exec web pytest
 }
 ```
 #### Сообщение об ошибке:
+Ответ:
 ```
 {
     "messageType": 2,
-    "message": {"reason": "The message is not a valid JSON"}}
+    "message": {"reason": "The message is not a valid JSON"}
+}
 ```
