@@ -40,7 +40,7 @@ docker-compose up
 ```
 Запустите миграции:
 ```
-docker-compose exec -T web alembic upgrade head
+docker-compose exec web alembic upgrade head
 ```
 Проект с минимальным интерфейсом откроется по адресу http://127.0.0.1:8000/ .
 Запуск тестов:
