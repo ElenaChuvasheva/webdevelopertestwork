@@ -166,14 +166,20 @@ docker-compose exec web pytest
                 "orders": 
                          [        
                               {    
-                                   "creationTime": "2023-03-30T11:34:01.456227", "changeTime": "2023-03-30T11:34:22.550857",
-                                   "status": "rejected",  "side": "buy", "price": 30, "amount": 2,
-                                   "instrument": "EUR/RUB", "uuid": "8b4d17ca-db5b-4e44-808f-affbbb7656ab"
+                                   "creationTime": "2023-03-30T11:34:01.456227",
+                                   "changeTime": "2023-03-30T11:34:22.550857",
+                                   "status": "rejected",  "side": "buy",
+                                   "price": 30, "amount": 2,
+                                   "instrument": "EUR/RUB",
+                                   "uuid": "8b4d17ca-db5b-4e44-808f-affbbb7656ab"
                               },
                               {    
-                                   "creationTime": "2023-03-30T11:34:12.548832", "changeTime": "2023-03-30T11:34:12.548839",
-                                   "status": "active", "side": "sell", "price": 20, "amount": 3,
-                                   "instrument": "EUR/RUB", "uuid": "75c936d0-8ae1-4f20-9510-97f557b679d1"
+                                   "creationTime": "2023-03-30T11:34:12.548832",
+                                   "changeTime": "2023-03-30T11:34:12.548839",
+                                   "status": "active", "side": "sell",
+                                   "price": 20, "amount": 3,
+                                   "instrument": "EUR/RUB",
+                                   "uuid": "75c936d0-8ae1-4f20-9510-97f557b679d1"
                               }
                          ]
                }
@@ -204,12 +210,16 @@ docker-compose exec web pytest
                 "quotes": 
                          [    
                               {    
-                                   "bid": 32.540866044239536, "offer": 32.768034070299606, "minAmount": 30.97320671154219,
-                                   "maxAmount": 36.668907735148736, "timestamp": "2023-03-30T11:42:51.229960"
+                                   "bid": 32.540866044239536, "offer": 32.768034070299606,
+                                   "minAmount": 30.97320671154219,
+                                   "maxAmount": 36.668907735148736,
+                                   "timestamp": "2023-03-30T11:42:51.229960"
                               },
                               {
-                                   "bid": 35.30738166239448, "offer": 37.97198429333178, "minAmount": 34.039151483095445,
-                                   "maxAmount": 38.928840172008506, "timestamp": "2023-03-30T11:43:01.231579"
+                                   "bid": 35.30738166239448, "offer": 37.97198429333178,
+                                   "minAmount": 34.039151483095445,
+                                   "maxAmount": 38.928840172008506,
+                                   "timestamp": "2023-03-30T11:43:01.231579"
                               }
                          ]
                }
