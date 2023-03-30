@@ -1,6 +1,6 @@
 # Бэкенд для симулятора биржи
 
-Можно отправить заявку (ордер) на покупку или продажу какого либо актива. 
+Можно отправить заявку (ордер) на покупку или продажу какого-либо актива. 
 Получив заявку, биржа ищет встречную заявку для заключения сделки.
 Заявка в итоге может быть исполнена, отклонена или же ее можно отменить самому.
 Исполнение заявок и поток котировок симулируются как случайные события.
@@ -19,7 +19,7 @@ Python 3.10, FastAPI, Pytest, SQLAlchemy, Alembic, Docker, PostgreSQL
 Для запуска подойдёт Docker 20.10.21, Docker Compose 2.12.2.  
 Клонируйте репозиторий:
 ```
-git@github.com:ElenaChuvasheva/webdevelopertestwork.git
+git clone git@github.com:ElenaChuvasheva/webdevelopertestwork.git
 ```
 Перейдите в папку webdevelopertestwork/server:
 ```
@@ -42,7 +42,7 @@ docker-compose up
 ```
 docker-compose exec web alembic upgrade head
 ```
-Проект с минимальным интерфейсом откроется по адресу http://127.0.0.1:8000/ .
+Проект с минимальным интерфейсом откроется по адресу http://127.0.0.1:8000/ .  
 Запуск тестов:
 ```
 docker-compose exec web pytest
@@ -194,7 +194,7 @@ docker-compose exec web pytest
     "message": {"orderId": "8b4d17ca-db5b-4e44-808f-affbbb7656ab"}
 }
 ```
-#### Сообщение об изменении котировок:
+#### Сообщение об изменении котировок
 Ответ:
 ```
 {
@@ -215,7 +215,7 @@ docker-compose exec web pytest
                }
 }
 ```
-#### Сообщение об ошибке:
+#### Сообщение об ошибке
 Ответ:
 ```
 {
