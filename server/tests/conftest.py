@@ -18,7 +18,7 @@ def temp_db():
     command.upgrade(alembic_cfg, "head")
 
     try:
-        yield dbase.TEST_SQLALCHEMY_DATABASE_URL
+        yield
     finally:
         drop_database(dbase.TEST_SQLALCHEMY_DATABASE_URL)
 
