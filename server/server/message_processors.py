@@ -6,6 +6,7 @@ from random import choice, uniform
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
+import asyncpg
 from bidict import ValueDuplicationError
 
 from server.enums import Instrument, OrderStatus
@@ -13,6 +14,7 @@ from server.models import server_messages
 from server.models.base import OrderIn, OrderOut, Quote
 from server.models.dbase import database, orders_table
 from server.pytest_conditions import RUN_FROM_PYTEST
+from server.utils import create_order, update_order
 
 
 def instrument_condition():
@@ -61,7 +63,8 @@ async def place_order_processor(
     new_order = OrderIn(**message.dict())
     uuid = uuid4()
     server.orders[websocket.client][uuid] = new_order
-    return server_messages.ExecutionReport(order_id=uuid,
+    uuid_from_db = await create_order(websocket, uuid, new_order)
+    return server_messages.ExecutionReport(order_id=uuid_from_db,
                                            order_status=new_order.status)
 
 
@@ -76,11 +79,12 @@ async def cancel_order_processor(
         if order.status == OrderStatus.active:
             order.status = OrderStatus.cancelled
             order.change_time = datetime.now()
+            uuid_from_db = await update_order(uuid, order)
         else:
             return server_messages.ErrorInfo(
                 reason=f'The order is {order.status.name}')
         return server_messages.ExecutionReport(
-            order_id=uuid, order_status=order.status)
+            order_id=uuid_from_db, order_status=order.status)
     except AttributeError:
         return server_messages.ErrorInfo(reason='The order does not exist')
 
@@ -94,26 +98,6 @@ async def get_orders_processor(
         uuid=uuid, **values.dict()
     ) for uuid, values in server.orders[websocket.client].items()]
     return server_messages.OrdersList(orders=orders_list)
-
-
-async def save_order_processor(
-        server: NTProServer,
-        websocket: fastapi.WebSocket,
-        message: client_messages.SaveOrder,
-):
-    uuid = message.dict().get('order_id')
-    order = server.orders[websocket.client].get(uuid)
-    if order is None:
-        return server_messages.ErrorInfo(reason='This order does not exist')
-    order_query = orders_table.insert().values(
-        uuid=uuid, address=str(websocket.client), **order.dict()).returning(
-        orders_table.c.uuid)
-
-    await database.connect()
-    record = await database.fetch_one(order_query)
-    uuid_from_db = dict(zip(record, record._mapping.values())).get('uuid')
-    await database.disconnect()
-    return server_messages.OrderSaved(order_id=uuid_from_db)
 
 
 async def order_magic(
@@ -131,8 +115,9 @@ async def order_magic(
     order_change.status = choice(
         [OrderStatus.filled, OrderStatus.rejected])
     order_change.change_time = datetime.now()
+    uuid_from_db = await update_order(key_change, order_change)
     await server.send(server_messages.ExecutionReport(
-        order_id=key_change,
+        order_id=uuid_from_db,
         order_status=order_change.status), websocket)
 
 

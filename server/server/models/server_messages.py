@@ -37,10 +37,6 @@ class OrdersList(ServerMessage):
     orders: list[OrderOut]
 
 
-class OrderSaved(ServerMessage):
-    order_id: uuid.UUID
-
-
 class ServerEnvelope(Envelope):
     message_type: enums.ServerMessageType
 
@@ -60,6 +56,5 @@ _SERVER_MESSAGE_TYPE_BY_CLASS = bidict.bidict({
     ExecutionReport: enums.ServerMessageType.execution_report,
     MarketDataUpdate: enums.ServerMessageType.market_data_update,
     OrdersList: enums.ServerMessageType.orders_list,
-    OrderSaved: enums.ServerMessageType.order_saved,
 })
 ServerMessageT = TypeVar('ServerMessageT', bound=ServerMessage)

@@ -4,7 +4,7 @@ from server.app import api
 from tests.utils_for_tests import is_valid_uuid
 
 
-def test_place_normal_order(place_normal_order_message):
+def test_place_normal_order(place_normal_order_message, temp_db):
     client = TestClient(api)
     with client.websocket_connect("/ws/") as websocket:
         websocket.send_text(place_normal_order_message)
@@ -47,7 +47,7 @@ def test_place_order_negative_amount(place_order_negative_amount_message):
         assert data['messageType'] == 2
 
 
-def test_cancel_order(place_normal_order_message):
+def test_cancel_order(place_normal_order_message, temp_db):
     client = TestClient(api)
     with client.websocket_connect("/ws/") as websocket:
         websocket.send_text(place_normal_order_message)
@@ -84,30 +84,6 @@ def test_cancel_processed_order(place_normal_order_message):
         reason = data['message']['reason']
         assert (reason == 'The order is filled'
                 or reason == 'The order is rejected')
-
-
-def test_normal_order_to_base(place_normal_order_message, temp_db):
-    client = TestClient(api)
-    with client.websocket_connect("/ws/") as websocket:
-        websocket.send_text(place_normal_order_message)
-        data = websocket.receive_json()
-        uuid = data['message']['orderId']
-        websocket.send_text(f'{{"messageType": 6, "message": '
-                            f'{{"orderId": "{uuid}"}}}}')
-        data = websocket.receive_json()
-        assert data['messageType'] == 6
-        assert data['message']['orderId'] == uuid
-
-
-def test_noexist_order_to_base():
-    client = TestClient(api)
-    with client.websocket_connect("/ws/") as websocket:
-        websocket.send_text(r'{"messageType": 6, "message": '
-                            r'{"orderId": '
-                            r'"4a01e7fc-4cb5-4718-b563-9d049c6b0272"}}')
-        data = websocket.receive_json()
-        assert data['messageType'] == 2
-        assert data['message']['reason'] == 'This order does not exist'
 
 
 def test_get_orders_empty(get_all_orders_message):

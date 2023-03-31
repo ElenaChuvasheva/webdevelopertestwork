@@ -66,7 +66,6 @@ _MESSAGE_PROCESSOR_BY_CLASS = {
     PlaceOrder: message_processors.place_order_processor,
     CancelOrder: message_processors.cancel_order_processor,
     GetOrders: message_processors.get_orders_processor,
-    SaveOrder: message_processors.save_order_processor,
 }
 
 _CLIENT_MESSAGE_TYPE_BY_CLASS = bidict.bidict({
@@ -75,7 +74,6 @@ _CLIENT_MESSAGE_TYPE_BY_CLASS = bidict.bidict({
     PlaceOrder: enums.ClientMessageType.place_order,
     CancelOrder: enums.ClientMessageType.cancel_order,
     GetOrders: enums.ClientMessageType.get_orders,
-    SaveOrder: enums.ClientMessageType.save_order,
 })
 
 ClientMessageT = TypeVar('ClientMessageT', bound=ClientMessage)
