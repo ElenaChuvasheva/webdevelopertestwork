@@ -185,21 +185,6 @@ docker-compose exec web pytest
                }
 }
 ```
-#### Сохранение заявки в базу
-Запрос:
-```
-{
-    "messageType": 6,
-    "message": {"orderId": "8b4d17ca-db5b-4e44-808f-affbbb7656ab"}
-}
-```
-Ответ:
-```
-{
-    "messageType": 6,
-    "message": {"orderId": "8b4d17ca-db5b-4e44-808f-affbbb7656ab"}
-}
-```
 #### Сообщение об изменении котировок
 Ответ:
 ```
