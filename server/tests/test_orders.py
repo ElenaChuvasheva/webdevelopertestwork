@@ -70,7 +70,7 @@ def test_cancel_noexist_order(cancel_noexist_order_message):
         assert data['message']['reason'] == 'The order does not exist'
 
 
-def test_cancel_processed_order(place_normal_order_message):
+def test_cancel_processed_order(place_normal_order_message, temp_db):
     client = TestClient(api)
     with client.websocket_connect("/ws/") as websocket:
         websocket.send_text(place_normal_order_message)
@@ -95,7 +95,8 @@ def test_get_orders_empty(get_all_orders_message):
         assert data['message']['orders'] == []
 
 
-def test_get_orders(place_normal_order_message, get_all_orders_message):
+def test_get_orders(place_normal_order_message, get_all_orders_message,
+                    temp_db):
     client = TestClient(api)
     with client.websocket_connect("/ws/") as websocket:
         websocket.send_text(place_normal_order_message)
@@ -107,3 +108,13 @@ def test_get_orders(place_normal_order_message, get_all_orders_message):
         fields = ('creationTime', 'changeTime', 'status',
                   'side', 'price', 'amount', 'instrument', 'uuid')
         assert all(map(order.__contains__, fields))
+
+
+def test_process_orders(place_normal_order_message, temp_db):
+    client = TestClient(api)
+    with client.websocket_connect("/ws/") as websocket:
+        websocket.send_text(place_normal_order_message)
+        websocket.receive_json()
+        data = websocket.receive_json()
+        assert data['messageType'] == 3
+        assert data['message']['orderStatus'] in ('filled', 'rejected')
